@@ -1,0 +1,99 @@
+,Code,Max height,Source,N,
+1,AEVE,4.5,Plot,55,
+2,ALED,7,Plot,29,
+3,AMIN,9,Plot,265,
+4,ANCA,20,Carvalho,NA,
+5,ANCO,9,Plot,10,Greater than IBGE height of 8m
+6,ANCR,12,Plot,23,Greater than IBGE height of 10m
+7,ANDI,2,Durigan,NA,Matches plot height of 2m from 1 individual
+8,ANFA,16,Lorenzi vol. 1,NA,Close to max from plots of 13m
+9,BADR,3.5,Plot,11,Greater than Durigan's height of 3m
+10,BALO,11,Plot,11,Greater than Lorenzi height of 8m
+11,BARU,3.95,Field,NA,Greater than 3m from Durigan
+12,BOVI,16,Lorenzi vol. 1,NA,Greater than max from plots of 13m
+13,BYBA,10,Lorenzi vol. 1,NA,
+14,BYCO,6,Lorenzi vol. 2,NA,
+15,CAAD,3.5,Plots,270,
+16,CABR,3.75,Field,11,
+17,CAGU,10,Lorenzi vol. 1,NA,
+18,CALU,8,Plot,3,
+19,CASY,10,Plot,79,Much greater than Lorenzi's 6m
+20,CESE,3.5,Plot,1,Not in any books
+21,CHMA,10,Lorenzi vol. 2,NA,
+22,COLA,15,Lorenizi vol. 1,NA,Matches plot height of 14m from 59 ind
+23,COSU,7,Lorenzi vol. 2,NA,
+24,CUTE,6,Plots,20,
+25,CUVE,22,Lorenzi vol. 1,NA,
+26,DAEL,2,Field,NA,Not in any books
+27,DARA,12,Plot,85,Not in any books
+28,DIBU,6,Plot,6,
+29,DIMO,14,Lorenzi vol. 1,NA,much greater than plots
+30,DUFU,2.53,Field,NA,Durigan 2m
+31,ERCU,4,Plot,10,
+32,ERGR,17,Lorenizi vol. 1,NA,Much greater than plots
+33,ERSU,4,Plot,10,Not in any books
+34,EUMY,10,Plot,27,Not in any books
+35,EUPU,7,Plot,11,Not in any books
+36,GOBA,6.5,Plot,66,Not in any books
+37,GOPO,13,Plot,677,Much greater than Lorenzi 8m
+38,GUNI,12,Lorenzi vol. 2,NA,Plot 10m
+39,JACA,10,IBGE,NA,Field 6.56 max
+40,KICO,3.5,Plot,2,Not in books
+41,LAHA,8,Plot,123,Not in books
+42,LEEL,11,Plot,177,Not in books
+43,LIMO,12,Lorenzi vol. 1,NA,Plot 10m
+44,LISA,4,Plots,34,Combined LISI and LISA
+45,LUCA,12,Lorenzi vol. 1,NA,Plot 11m
+46,LUGR,14,Lorenzi vol. 1,NA,Plot 12m
+47,MAAC,14,Lorenzi vol. 1,NA,Plot 12m
+48,MABR,15,Plot,82,Lorenzi 14m
+49,MAEL,14,Lorenzi Vol. 1,NA,Plot 11m
+50,MIAL,4.83,Field,NA,Not in books
+51,MILI,8,Plot,84,Not in books
+52,MYFA,10,Plot,341,Not in books
+53,MYLI,5.35,Field,NA,Not in books
+54,MYMU,7,Plot,43,Not in books
+55,MYTO,12,Lorenzi vol. 1,NA,Plot 9m
+56,MYVE,9,Plot,14,Not in books
+57,NECU,30,Lorenzi vol. 2,NA,Plot 13m
+58,NEOP,20,Lorenzi vol. 1,NA,Not in books
+59,OCCO,20,Lorenzi vol. 1,NA,
+60,OCMI,15,Plot,45,12m Lorenzi
+61,OCPU,30,Lorenzi vol. 1,NA,
+62,OCVE,12,Plot,22,
+63,OUSP,7,Plot,25,5m Lorenzi
+64,PEOB,14,Plot,246,
+65,PEWI,20,Lorenzi vol. 1,NA,
+66,PIAX,20,Lorenzi vol. 3,NA,13 in plots
+67,PIRO,8,Lorenzi vol. 2,NA,
+68,PLEL,14,Plot,43,12 in Lorenzi
+69,PLPO,10,Lorenzi vol. 1,NA,9m in plot
+70,PLRE,12,Lorenzi vol. 1,NA,11m in plots
+71,POTO,18,Lorenzi vol. 1,NA,9m in plot
+72,PRHE,20,Lorenzi vol. 1,NA,13m in plot
+73,PRMY,15,Lorenzi vol. 1,NA,
+74,QUCO,11,Plot,6,Not in books
+75,QUGR,12,Lorenzi vol. 1,NA,9m in plot
+76,QUMU,9,Plot,10,6m in Lorenzi
+77,RAFE,12,Lorenzi vol. 1,NA,9m in plot
+78,RAGU,8,Lorenzi vol. 1,NA,5.7 in field
+79,RALA,6,Plot,5,Not in books
+80,RAUM,15,Lorenzi vol. 2,,
+81,ROMO,5,Plot,13,Not in books
+82,SCVI,5,Plot,27,Not in books
+83,SIGU,10,Plot,378,Not in books
+84,SOLY,1.2,Field,NA,Not in books
+85,STAD,5,Lorenzi vol. 1,NA,
+86,STCA,10,Lorenzi vol. 1,NA,
+87,STFE,14,Lorenzi vol. 1,NA,
+88,STPO ,12,Lorenzi vol. 1,NA,10m IBGE
+89,STRO,5.5,Plot,94,Not in books
+90,SYPU,8,Plot,43,Not in books
+91,VOTU,15,Plot,213,12m in Lorenzi
+92,TACA,9,Plot,40,8m in Lorenzi
+93,TAGU,14,Plot,111,14m in Lorenzi
+94,TAOC,14,Lorenzi vol. 1,NA,4m in plots
+95,TEGL,16,Lorenzi vol. 1,NA,13m in field
+96,TOFO,2.6,Plot,4,Not in books
+97,ZARH,12,Lorenzi vol. 1,NA,11m in plots
+98,ZEMO,2.8,Plot,4,2.8 also in field
