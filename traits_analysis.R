@@ -18,115 +18,23 @@ setwd("C:\\Users\\Sam\\Google Drive\\Projects\\Savanna traits")
 set.seed(45750762)
 #----------------------------------------------------------------------------
 # Function to plot elliptical hulls for phylogenetic PCA,
-# modified from vegan::ordiellipse
+# modified from vegan::ordiellipse. I removed a bunch of functionality,
+# so now it only draws elliptical hulls
 #----------------------------------------------------------------------------
-phyellipse <- function (ord, groups, display = "sites", 
-                        kind = c("sd", "se", "ehull"), 
-                        conf, draw = c("lines", "polygon", "none"), 
-                        w = weights(ord, display), 
-                        col = NULL, alpha = 127, 
-                        show.groups, label = FALSE, 
-                        border = NULL, lty = NULL, lwd = NULL, ...) 
+phyellipse <- function (ord, groups, display = "sites",
+                        col = NULL, 
+                        show.groups, choices = c(1,2), ...) 
 {
-  weights.default <- function(object, ...) NULL
-  kind <- match.arg(kind)
-  draw <- match.arg(draw)
+
   pts <- ord$S
-  # pts <- scores(pca_results, display = "sites")
   pts <- as.matrix(pts)
-  if (ncol(pts) > 2) 
-    pts <- pts[, 1:2, drop = FALSE]
-  if (ncol(pts) < 2) 
-    stop("ordiellipse needs two dimensions")
-  w <- eval(w)
-  if (length(w) == 1) 
-    w <- rep(1, nrow(pts))
-  if (is.null(w)) 
-    w <- rep(1, nrow(pts))
-  if (alpha < 1) 
-    alpha <- round(alpha * 255)
-  if (draw == "polygon" && !is.null(col)) 
-    col <- rgb(t(col2rgb(col)), alpha = alpha, maxColorValue = 255)
-  if (!missing(show.groups)) {
-    take <- groups %in% show.groups
-    pts <- pts[take, , drop = FALSE]
-    groups <- groups[take]
-    w <- w[take]
-  }
-  out <- seq(along = groups)
-  inds <- names(table(groups))
-  col.new <- border.new <- lty.new <- lwd.new <- NULL
-  for (arg in c("col", "border", "lty", "lwd")) {
-    tmp <- mget(arg, ifnotfound = list(NULL))[[1]]
-    if (is.null(tmp)) 
-      tmp <- ifelse(suppressWarnings(is.null(par(arg))), 
-                    par("fg"), par(arg))
-    if (length(inds) != length(tmp)) {
-      tmp <- rep_len(tmp, length(inds))
-    }
-    assign(paste(arg, ".new", sep = ""), tmp)
-  }
-  if (is.null(col) && draw == "polygon") 
-    col.new <- rep_len("transparent", length(inds))
-  else if (is.null(col) && draw == "lines") 
-    col.new <- rep_len(par("fg"), length(inds))
-  res <- list()
-  if (label) {
-    cntrs <- matrix(NA, nrow = length(inds), ncol = 2)
-    rownames(cntrs) <- inds
-  }
-  kk <- complete.cases(pts) & !is.na(groups)
-  for (is in inds) {
-    gr <- out[groups == is & kk]
-    if (length(gr)) {
-      X <- pts[gr, , drop = FALSE]
-      W <- w[gr]
-      if (kind == "ehull") {
-        tmp <- ellipsoidhull(X)
-        mat <- list(cov = tmp$cov, center = tmp$loc, 
-                    n.obs = nrow(X))
-      }
-      else mat <- cov.wt(X, W)
-      if (mat$n.obs == 1) 
-        mat$cov[] <- 0
-      if (kind == "se") 
-        mat$cov <- mat$cov * sum(mat$wt^2)
-      if (kind == "ehull") 
-        t <- sqrt(tmp$d2)
-      else {
-        if (missing(conf)) 
-          t <- 1
-        else t <- sqrt(qchisq(conf, 2))
-      }
-      if (mat$n.obs > 1) 
-        xy <- vegan:::veganCovEllipse(mat$cov, mat$center, t)
-      else xy <- X
-      if (draw == "lines") 
-        vegan:::ordiArgAbsorber(xy, FUN = lines, col = if (is.null(col)) 
-          par("fg")
-          else col.new[match(is, inds)], lty = lty.new[match(is, 
-                                                             inds)], lwd = lwd.new[match(is, inds)])
-      else if (draw == "polygon") 
-        vegan:::ordiArgAbsorber(xy[, 1], xy[, 2], col = col.new[match(is, 
-                                                                      inds)], border = border.new[match(is, inds)], 
-                                lty = lty.new[match(is, inds)], lwd = lwd.new[match(is, 
-                                                                                    inds)], FUN = polygon)
-      if (label && draw != "none") {
-        cntrs[is, ] <- mat$center
-      }
-      mat$scale <- t
-      res[[is]] <- mat
-    }
-  }
-  if (label && draw != "none") {
-    if (draw == "lines") 
-      ordiArgAbsorber(cntrs[, 1], cntrs[, 2], labels = rownames(cntrs), 
-                      col = col.new, FUN = text, ...)
-    else ordiArgAbsorber(cntrs, col = NULL, FUN = ordilabel, 
-                         ...)
-  }
-  class(res) <- "ordiellipse"
-  invisible(res)
+  pts <- pts[, choices, drop = FALSE]
+  take <- groups %in% show.groups
+  pts <- pts[take, , drop = FALSE]
+
+  tmp <- ellipsoidhull(pts)
+  lines(predict(tmp), col = col)
+  
 }
 
 
@@ -167,7 +75,7 @@ hist(clean_species_reduced$Bark_at_8mm)
 hist(log(clean_species_reduced$Bark_at_8mm)) #yes
 hist(clean_species_reduced$Wood_density)#no
 
-
+clean_species_reduced_orig <- clean_species_reduced
 clean_species_reduced_trans <- clean_species_reduced
 
 #vars to log-trans
@@ -186,12 +94,52 @@ tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species$Code))
 
 # plot(tree_pruned, type = "fan")
 
+#------------------------------------------------------------------------------
+# What proportion of tree species sampled? For results section
+#------------------------------------------------------------------------------
+#calculate using both clean_species and clean_species_reduced
+total_ba <- sum(plot_data$CSA_BH_expand, na.rm = TRUE)/10000
+sampled_ba <- sum(plot_data[plot_data$Code %in% clean_species$Code, ]$CSA_BH_expand, na.rm = TRUE)/10000
+sampled_ba/total_ba
+
+plot_ba <- aggregate(plot_data[, c("P", "CSA_BH_expand")], by = list(plot_data$P), FUN = function(x){sum(x, na.rm=TRUE)})
+sampled_plot_ba <- aggregate(plot_data[plot_data$Code %in% clean_species$Code, c("P", "CSA_BH_expand")], 
+                             by = list(plot_data[plot_data$Code %in% clean_species$Code, ]$P), FUN = function(x){sum(x, na.rm=TRUE)})
+sampled_plot_ba$CSA_BH_expand / plot_ba$CSA_BH_expand
 
 #------------------------------------------------------------------------------
 # Bivariate analyses
 #------------------------------------------------------------------------------
-# Figure 1: trait differences between functional groups
+# Calculate phylogenetic signal, ANOVA, Tukey's post-hoc, phylogenetic ANOVA
 log_trans <- c(1, 2, 5, 7, 8)
+
+tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species_reduced$Code)) # for phylogenetic ANOVA
+clean_species_ordered_orig <- clean_species_reduced_orig[match(tree_pruned$tip.label, clean_species_reduced_orig$Code), ] #reorder to match phylogeny
+
+
+for (i in 1:length(traits_names)){
+  #calculate post-hoc phylogenetically-corrected differences and add letters to figure
+  tuke <- TukeyHSD(aov(model))
+  pvals <- tuke$`as.factor(clean_species_reduced$FG)`[, 4]
+  
+  
+  #calculate the phylogenetic signal in the trait
+  sig <- phylosig(tree = tree_pruned, x = clean_species_ordered_orig[, traits_names[i]], 
+                  method="lambda", test=TRUE, nsim=1000)
+  lam <- round(sig$lambda, digits = 2)
+  #plot the lambda value
+  mtext(text = eval(bquote(expression(lambda ~ "=" ~ .(lam)))) , side = 3, at = 2.5, line = .3, cex = 0.85)
+  
+  
+  
+  phyl_aov_results <- phylANOVA(tree = tree_pruned, x = clean_species_ordered_orig$FG, 
+                                y = clean_species_ordered_orig[, traits_names[i]], 
+                                nsim=1000, posthoc=TRUE, p.adj="holm")
+  pvals <- c(phyl_aov_results$Pt[2,1], phyl_aov_results$Pt[3,1], phyl_aov_results$Pt[3,2]) 
+  names(pvals) <- c("G-S", "F-S", "F-G")
+}
+#---------------------------
+# Figure 1: trait differences between functional groups
 
 traits_names <- names(clean_species[-c(1:4, 13, 15, 16)])
 traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
@@ -209,24 +157,27 @@ tiff(filename="./plots/traits_by_FG.tiff",
      antialias = "gray",
      compression = "lzw",
      units="in", 
-     width = 5, 
+     width = 4.5, 
      height=6, 
      pointsize=9, 
      res=600)
 
 par(mfrow = c(3, 3),
-    mar = c(2,7,2,2),
-    oma = c(1, 1, 0, 0))
+    mar = c(2,6,2,0.5),
+    oma = c(1, 0, 0, 0))
 
 for (i in 1:length(traits_names)){
-  model <- lm(clean_species_reduced[, traits_names[i]] ~ as.factor(clean_species_reduced$FG))
+  # model <- lm(clean_species_reduced[, traits_names[i]] ~ as.factor(clean_species_reduced$FG))
   noise <- rnorm(nrow(clean_species_reduced), 0, .02)
+  
+  means <- aggregate(clean_species_reduced_orig[, traits_names[i]], by = list(as.factor(clean_species_reduced$FG)),
+                     FUN = mean)
   
   
   if(!(i %in% log_trans)){
     plot(clean_species_reduced[, traits_names[i]] ~ I(as.numeric(clean_species_reduced$FG) + noise),
          xlab = "",
-         ylab = traits_names_clean[i],
+         ylab = "",
          xaxt = 'n',
          xlim = c(0.8, 3.2),
          ylim = c((0.8 * min(clean_species_reduced[, traits_names[i]], na.rm = TRUE, na.rm = TRUE)), 
@@ -236,7 +187,7 @@ for (i in 1:length(traits_names)){
   }else{
     plot(exp(clean_species_reduced[, traits_names[i]]) ~ I(as.numeric(clean_species_reduced$FG) + noise),
          xlab = "",
-         ylab = traits_names_clean[i],
+         ylab = "",
          xaxt = 'n',
          xlim = c(0.8, 3.2),
          ylim = c((0.8 * min(exp(clean_species_reduced[, traits_names[i]]), na.rm = TRUE)), 
@@ -244,20 +195,23 @@ for (i in 1:length(traits_names)){
          cex.lab = 1.3
     )
   }
+  points(means[, 2] ~ c(1,2,3), pch = 18, cex = 2)
+  lines(means[, 2] ~ c(1,2,3), lty = 1, lwd = 2)
   
   mtext(text = levels(clean_species_reduced$FG), side = 1, at = c(1,2,3), line = 1)
   mtext(text = paste0("(", letters[i], ")") , side = 3, at = 0.4, line = .3)
-  
-  
-  #calculte post-hoc differences and add letters to figure
-  tuke <- TukeyHSD(aov(model))
-  pvals <- tuke$`as.factor(clean_species_reduced$FG)`[, 4]
+  mtext(text = traits_names_clean[i], side = 2, line = 1.9)
   
   tuke_letters <- multcompLetters(pvals, reversed=TRUE)$Letters[c(3,1,2)]
   
+  #fixes letters sometimes being in the wrong order -- not sure why this happens?
+  if(tuke_letters[1] != "a"){
+    tuke_letters <- multcompLetters(pvals, reversed=FALSE)$Letters[c(3,1,2)]
+  }
+  
   ylim <- par("usr")[c(3,4)]
   yrange <- ylim[2]-ylim[1]
-  
+  #plot the tuke letters
   text(x = c(1,2,3), y = ylim[2] - yrange/10, labels = tuke_letters, cex = 1.2)
 }
 
@@ -268,40 +222,37 @@ dev.off()
 #------------------------------------------------------------------------------
 
 tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species_reduced$Code))
-
-length(tree_pruned$tip.label)
-
 clean_species_ordered <- clean_species_reduced[match(tree_pruned$tip.label, clean_species_reduced$Code), ]
 
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Total_leaf_size, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Total_leaf_size, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Total_leaf_size, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Leaf_thickness, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Leaf_thickness, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Leaf_thickness, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Max_height, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Max_height, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Max_height, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Height_at_5cm, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Height_at_5cm, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Height_at_5cm, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Crown_ratio, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Crown_ratio, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Crown_ratio, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Light_at_5cm, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Light_at_5cm, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Light_at_5cm, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$SLA, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$SLA, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$SLA, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Bark_at_5cm, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Bark_at_5cm, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Bark_at_5cm, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Bark_at_8mm, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Bark_at_8mm, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Bark_at_8mm, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, y = clean_species_ordered$Wood_density, nsim=1000, posthoc=TRUE, p.adj="holm")
-phylosig(tree = tree_pruned, x = clean_species_ordered$Wood_density, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
+phylosig(tree = tree_pruned, x = clean_species_ordered$Wood_density, method="lambda", test=TRUE, nsim=1000, se=NULL, start=NULL,
          control=list())
 
 
@@ -312,18 +263,6 @@ multcompLetters(pvals_test, reversed=TRUE)$Letters[c(3,1,2)]
 
 phylosig(tree = tree_pruned, x = clean_species_ordered$Wood_density, method="lambda", test=FALSE, nsim=1000, se=NULL, start=NULL,
          control=list())
-#------------------------------------------------------------------------------
-# What proportion of tree species sampled? For results section
-#------------------------------------------------------------------------------
-#calculate using both clean_species and clean_species_reduced
-total_ba <- sum(plot_data$CSA_BH_expand, na.rm = TRUE)/10000
-sampled_ba <- sum(plot_data[plot_data$Code %in% clean_species$Code, ]$CSA_BH_expand, na.rm = TRUE)/10000
-sampled_ba/total_ba
-
-plot_ba <- aggregate(plot_data[, c("P", "CSA_BH_expand")], by = list(plot_data$P), FUN = function(x){sum(x, na.rm=TRUE)})
-sampled_plot_ba <- aggregate(plot_data[plot_data$Code %in% clean_species$Code, c("P", "CSA_BH_expand")], 
-                             by = list(plot_data[plot_data$Code %in% clean_species$Code, ]$P), FUN = function(x){sum(x, na.rm=TRUE)})
-sampled_plot_ba$CSA_BH_expand / plot_ba$CSA_BH_expand
 
 #------------------------------------------------------------------------------
 #PCA on traits
@@ -349,9 +288,9 @@ trait_names <- gsub("_", " ", rownames(pca_results$CA$v))
 sp_scores <- scores(pca_results,  choices = c(1:10), display = c("sites"))
 trait_scores <- scores(pca_results, choices = c(1:10), display = c("species"))
 
-# summary(pca_results)
+summary(pca_results)
 
-biplot(pca_results, choices = c(1,2))
+biplot(pca_results, choices = c(1,3))
 # ordihull(ord = pca_results, groups = factor(clean_species_reduced$FG))
 
 tiff(filename="./plots/traits_PCA_axes_1_2.tiff", 
@@ -385,7 +324,7 @@ for(i in 1:3){
               kind = "sd", conf = 0.90)
 }
 
-legend(x = -1.7, y = 1.65, 
+legend(x = par()$usr[1], y = par()$usr[4], 
        legend = c("Forest", "Generalist", "Savanna"), 
        col = c("black", "green", "dark orange"), 
        pt.bg = c("black", "green", "dark orange"), 
@@ -402,6 +341,56 @@ text(x = trait_scores[, 1], y = trait_scores[, 2], labels = trait_names, cex = 1
 
 dev.off()
 
+#################
+# PCs 1 + 3
+
+tiff(filename="./plots/traits_PCA_axes_1_3.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 7, 
+     height=7, 
+     pointsize=9, 
+     res=600)
+color_groups <- data.frame(group = as.character(c("F", "G", "S")),
+                           col = as.character(c("black", "green", "dark orange")))
+color_points <- as.character(color_groups[match(pca_groups, color_groups$group), "col"])
+
+plot(NA,
+     xlab = "PC1", ylab = "PC3",
+     xlim = c( (min(c(sp_scores[, 1], trait_scores[, 1]) - .5)), 
+               (max(c(sp_scores[, 1], trait_scores[, 1])) + 0.4)),
+     ylim = c( (min(c(sp_scores[, 3], trait_scores[, 3]) - .5)), 
+               (max(c(sp_scores[, 3], trait_scores[, 3])) + 0.4)))
+text(y = sp_scores[, 3], x = sp_scores[, 1], labels = pca_sp_names, col = color_points, cex = .7)
+# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
+
+abline(h = 0)
+abline(v = 0)
+
+for(i in 1:3){
+  ordiellipse(pca_results, pca_groups, show.groups = color_groups[i, 1], 
+              col = as.character(color_groups[i, 2]), choices = c(1,3),
+              kind = "sd", conf = 0.90)
+}
+
+legend(x = par()$usr[1], y = par()$usr[4], 
+       legend = c("Forest", "Generalist", "Savanna"), 
+       col = c("black", "green", "dark orange"), 
+       pt.bg = c("black", "green", "dark orange"), 
+       pch = 21,
+       cex = 1.5,
+       bty = "n")
+
+segments(x0 = 0, y0 = 0, x1 = trait_scores[, 1], y1 = trait_scores[, 3])
+# yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
+# xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
+yoffsets <- 0
+xoffesets <- 0
+text(x = trait_scores[, 1], y = trait_scores[, 3], labels = trait_names, cex = 1.3)
+
+dev.off()
 
 #-----------------------------------------------------------------------------
 # Phylogenetic PCA
@@ -422,9 +411,9 @@ phy_pca_sp_names <- clean_species_ordered$Code
 
 #run the PCA
 phy_pca_results <- phyl.pca(tree = tree_pruned, Y = phy_pca_data[match(tree_pruned$tip.label, rownames(phy_pca_data)), ], method="BM", mode="cov")
-trait_names <- gsub("_", " ", rownames(phy_pca_results$Evec))
-sp_scores <- phy_pca_results$S
-trait_scores <- phy_pca_results$L * 3
+phy_trait_names <- gsub("_", " ", rownames(phy_pca_results$Evec))
+phy_sp_scores <- phy_pca_results$S
+phy_trait_scores <- phy_pca_results$L * 3
 
 summary(phy_pca_results)
 biplot(phy_pca_results)
@@ -447,11 +436,11 @@ color_points <- as.character(color_groups[match(phy_pca_groups, color_groups$gro
 
 plot(NA,
      xlab = "PC1", ylab = "PC2",
-     xlim = c( (min(c(sp_scores[, 1], trait_scores[, 1]) - .5)),
-               (max(c(sp_scores[, 1], trait_scores[, 1])) + 0.4)),
-     ylim = c( (min(c(sp_scores[, 2], trait_scores[, 2]) - .5)),
-               (max(c(sp_scores[, 2], trait_scores[, 2])) + 0.4)))
-text(y = sp_scores[, 2], x = sp_scores[, 1], labels = phy_pca_sp_names, col = color_points, cex = .7)
+     xlim = c( (min(c(phy_sp_scores[, 1], phy_trait_scores[, 1]) - .5)),
+               (max(c(phy_sp_scores[, 1], phy_trait_scores[, 1])) + 0.4)),
+     ylim = c( (min(c(phy_sp_scores[, 2], phy_trait_scores[, 2]) - .5)),
+               (max(c(phy_sp_scores[, 2], phy_trait_scores[, 2])) + 0.4)))
+text(y = phy_sp_scores[, 2], x = phy_sp_scores[, 1], labels = phy_pca_sp_names, col = color_points, cex = .7)
 # points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
 
 abline(h = 0)
@@ -461,10 +450,12 @@ for(i in 1:3){
   phyellipse(ord = phy_pca_results, groups = factor(clean_species_ordered$FG),
              show.groups = color_groups[i, 1],
              col = as.character(color_groups[i, 2]),
-             kind = "ehull")
+             choices = c(1,2),
+             kind = "sd",
+             conf = 0.95)
 }
 
-legend(x = -1.7, y = 1.65,
+legend(x = par()$usr[1], y = par()$usr[4],
        legend = c("Forest", "Generalist", "Savanna"),
        col = c("black", "green", "dark orange"),
        pt.bg = c("black", "green", "dark orange"),
@@ -472,14 +463,64 @@ legend(x = -1.7, y = 1.65,
        cex = 1.5,
        bty = "n")
 
-segments(x0 = 0, y0 = 0, x1 = trait_scores[, 1], y1 = trait_scores[, 2])
+segments(x0 = 0, y0 = 0, x1 = phy_trait_scores[, 1], y1 = phy_trait_scores[, 2])
 yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
 xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
-text(x = trait_scores[, 1], y = trait_scores[, 2], labels = trait_names, cex = 1.3)
+text(x = phy_trait_scores[, 1], y = phy_trait_scores[, 2], labels = phy_trait_names, cex = 1.3)
 
 dev.off()
 
-anosim(phy_pca_results$S, grouping = clean_species_reduced$FG, distance = "euclidean")
+
+#######################
+# PCs 1 = 3
+
+tiff(filename="./plots/traits_phylo_PCA_axes_1_3.tiff",
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in",
+     width = 7,
+     height=7,
+     pointsize=9,
+     res=600)
+color_groups <- data.frame(group = as.character(c("F", "G", "S")),
+                           col = as.character(c("black", "green", "dark orange")))
+color_points <- as.character(color_groups[match(phy_pca_groups, color_groups$group), "col"])
+
+plot(NA,
+     xlab = "PC1", ylab = "PC3",
+     xlim = c( (min(c(phy_sp_scores[, 1], phy_trait_scores[, 1]) - .5)),
+               (max(c(phy_sp_scores[, 1], phy_trait_scores[, 1])) + 0.4)),
+     ylim = c( (min(c(phy_sp_scores[, 3], phy_trait_scores[, 3]) - .5)),
+               (max(c(phy_sp_scores[, 3], phy_trait_scores[, 3])) + 0.4)))
+text(y = phy_sp_scores[, 3], x = phy_sp_scores[, 1], labels = phy_pca_sp_names, col = color_points, cex = .7)
+# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
+
+abline(h = 0)
+abline(v = 0)
+
+for(i in 1:3){
+  phyellipse(ord = phy_pca_results, groups = factor(clean_species_ordered$FG),
+             show.groups = color_groups[i, 1],
+             col = as.character(color_groups[i, 2]),
+             kind = "ehull",
+             choices = c(2,3))
+}
+
+legend(x = par()$usr[1], y = par()$usr[4],
+       legend = c("Forest", "Generalist", "Savanna"),
+       col = c("black", "green", "dark orange"),
+       pt.bg = c("black", "green", "dark orange"),
+       pch = 21,
+       cex = 1.5,
+       bty = "n")
+
+segments(x0 = 0, y0 = 0, x1 = phy_trait_scores[, 1], y1 = phy_trait_scores[, 3])
+yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
+xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
+text(x = phy_trait_scores[, 1], y = phy_trait_scores[, 3], labels = phy_trait_names, cex = 1.3)
+
+dev.off()
 
 
 
@@ -499,10 +540,9 @@ write.csv(species_scores_table, "./Model output/species_score_table.csv")
 library("Hotelling")
 pca_results_out <- cbind(as.data.frame(sp_scores), clean_species_ordered$FG)
 names(pca_results_out)[11] <- "FG"
-test <- hotelling.test(x = sp_scores[clean_species_ordered$FG == "F", c(1,2)], 
-               y = sp_scores[clean_species_ordered$FG == "G", c(1,2)],
-               perm = TRUE,
-               B = 10000, progBar = FALSE)
+test <- hotelling.test(x = sp_scores[clean_species_ordered$FG == "G", c(1,2)], 
+               y = sp_scores[clean_species_ordered$FG == "F", c(1,2)],
+               perm = FALSE)
 summary(test)
 test$stats
 test$pval
