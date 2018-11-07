@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1541616771839.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "863AC305",
+    "lastKnownWriteTime" : 2319971777422636597,
+    "last_content_update" : 1541616771839,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "3DB55C41",
+        "caption" : "plot_agg_traits",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=plot_agg_traits&cache_key=3DB55C41",
+        "displayedObservations" : 30,
+        "environment" : "",
+        "object" : "plot_agg_traits",
+        "preview" : 0,
+        "totalObservations" : 30,
+        "variables" : 19
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

@@ -215,19 +215,24 @@ write.csv(plot_data_no_equals, paste0("./Clean data/plot_data", Sys.Date(), ".cs
 
 ## Get relative bark thickness for stems
 
-bark_table <- clean_data[, c("Code", "D30_eff", "Mean.Bark.thickness")]
+bark_table <- clean_data[, c("Code", "max_d30", "Mean.Bark.thickness")]
 
 ## Get relative bark thickness for twigs
 
 bark_table_2 <- clean_data[, c("Code", "Outer.diameter", "Twig.bark.thickness")]
 bark_table_2$Outer.diameter <- bark_table_2$Outer.diameter / 10
-names(bark_table_2) <- names(bark_table)
+names(bark_table_2) <- names(bark_table)[1:3]
 bark_table <- rbind(bark_table, bark_table_2) #combine all bark measurements into one data frame
 bark_table$Code <- as.factor(bark_table$Code)
 
-bark_model_global  <- lmer(Mean.Bark.thickness ~ Code*log(D30_eff) + (1|Code), data = bark_table)
+bark_model_global  <- lmer(Mean.Bark.thickness ~  Code*log(max_d30) + (1|Code), data = bark_table)
+
 saveRDS(bark_model_global, "./clean data/bark_model.RDS")
 
+bark_table_fg <- join(bark_table, clean_data[, c("Code", "FG", "Life.Form")], by = c("Code"))
+
+bark_model_fg <- lm(Mean.Bark.thickness ~  FG*Life.Form*log(max_d30), data = bark_table_fg)
+saveRDS(bark_model_global, "./clean data/bark_model_fg.RDS")
 #-------------------------------------------------------------------------
 # Spruce up frost and light data
 #-------------------------------------------------------------------------
@@ -309,7 +314,7 @@ for(i in 1:length(unique(clean_data$Code))){
     }
   clean_species$Bark_at_8mm[i] <- predict(twig_model, newdata = list(Outer.diameter = 8))
   
-  clean_species$Bark_at_5cm[i] <- predict(bark_model_global, newdata = list(D30_eff = 5, Code = code_select))
+  clean_species$Bark_at_5cm[i] <- predict(bark_model_global, newdata = list(max_d30 = 5, Code = code_select))
   
   # #plot the bark thickness regressions
   # plot(Mean.Bark.thickness ~ D30_eff, data = bark_table[bark_table$Code == code_select, ],
