@@ -14,6 +14,7 @@ library("plotrix")
 library("ape")
 library("cluster")
 library("FD")
+library("phytools")
 
 setwd("C:\\Users\\Sam\\Google Drive\\Projects\\Savanna traits")
 set.seed(45750762)
@@ -375,137 +376,6 @@ text(x = trait_scores[, 1], y = trait_scores[, 3], labels = trait_names, cex = 1
 
 dev.off()
 
-#-----------------------------------------------------------------------------
-# Phylogenetic PCA
-#-----------------------------------------------------------------------------
-tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species_reduced$Code))
-
-clean_species_ordered <- clean_species_reduced[match(tree_pruned$tip.label, clean_species_reduced$Code), ]
-
-phy_pca_data <- scale(clean_species_ordered[, c("Total_leaf_size", "Leaf_thickness", "Max_height",
-                                            "Height_at_5cm", "Crown_ratio", "SLA",
-                                            "Bark_at_5cm", "Bark_at_8mm", "Wood_density", "Light_at_5cm")])
-rownames(phy_pca_data) <- clean_species_ordered$Code
-phy_pca_groups <- clean_species_ordered[, c("FG")]
-
-phy_pca_sp_names <- clean_species_ordered$Code
-
-
-
-#run the PCA
-phy_pca_results <- phyl.pca(tree = tree_pruned, Y = phy_pca_data[match(tree_pruned$tip.label, rownames(phy_pca_data)), ], method="BM", mode="cov")
-phy_trait_names <- gsub("_", " ", rownames(phy_pca_results$Evec))
-phy_sp_scores <- phy_pca_results$S
-phy_trait_scores <- phy_pca_results$L * 3
-
-summary(phy_pca_results)
-biplot(phy_pca_results)
-
-
-
-
-tiff(filename="./plots/traits_phylo_PCA_axes_1_2.tiff",
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in",
-     width = 7,
-     height=7,
-     pointsize=9,
-     res=600)
-color_groups <- data.frame(group = as.character(c("F", "G", "S")),
-                           col = as.character(c("black", "green", "dark orange")))
-color_points <- as.character(color_groups[match(phy_pca_groups, color_groups$group), "col"])
-
-plot(NA,
-     xlab = "PC1", ylab = "PC2",
-     xlim = c( (min(c(phy_sp_scores[, 1], phy_trait_scores[, 1]) - .5)),
-               (max(c(phy_sp_scores[, 1], phy_trait_scores[, 1])) + 0.4)),
-     ylim = c( (min(c(phy_sp_scores[, 2], phy_trait_scores[, 2]) - .5)),
-               (max(c(phy_sp_scores[, 2], phy_trait_scores[, 2])) + 0.4)))
-text(y = phy_sp_scores[, 2], x = phy_sp_scores[, 1], labels = phy_pca_sp_names, col = color_points, cex = .7)
-# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
-
-abline(h = 0)
-abline(v = 0)
-
-for(i in 1:3){
-  phyellipse(ord = phy_pca_results, groups = factor(clean_species_ordered$FG),
-             show.groups = color_groups[i, 1],
-             col = as.character(color_groups[i, 2]),
-             choices = c(1,2),
-             kind = "sd",
-             conf = 0.95)
-}
-
-legend(x = par()$usr[1], y = par()$usr[4],
-       legend = c("Forest", "Generalist", "Savanna"),
-       col = c("black", "green", "dark orange"),
-       pt.bg = c("black", "green", "dark orange"),
-       pch = 21,
-       cex = 1.5,
-       bty = "n")
-
-segments(x0 = 0, y0 = 0, x1 = phy_trait_scores[, 1], y1 = phy_trait_scores[, 2])
-yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
-xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
-text(x = phy_trait_scores[, 1], y = phy_trait_scores[, 2], labels = phy_trait_names, cex = 1.3)
-
-dev.off()
-
-
-#######################
-# PCs 1 = 3
-
-tiff(filename="./plots/traits_phylo_PCA_axes_1_3.tiff",
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in",
-     width = 7,
-     height=7,
-     pointsize=9,
-     res=600)
-color_groups <- data.frame(group = as.character(c("F", "G", "S")),
-                           col = as.character(c("black", "green", "dark orange")))
-color_points <- as.character(color_groups[match(phy_pca_groups, color_groups$group), "col"])
-
-plot(NA,
-     xlab = "PC1", ylab = "PC3",
-     xlim = c( (min(c(phy_sp_scores[, 1], phy_trait_scores[, 1]) - .5)),
-               (max(c(phy_sp_scores[, 1], phy_trait_scores[, 1])) + 0.4)),
-     ylim = c( (min(c(phy_sp_scores[, 3], phy_trait_scores[, 3]) - .5)),
-               (max(c(phy_sp_scores[, 3], phy_trait_scores[, 3])) + 0.4)))
-text(y = phy_sp_scores[, 3], x = phy_sp_scores[, 1], labels = phy_pca_sp_names, col = color_points, cex = .7)
-# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
-
-abline(h = 0)
-abline(v = 0)
-
-for(i in 1:3){
-  phyellipse(ord = phy_pca_results, groups = factor(clean_species_ordered$FG),
-             show.groups = color_groups[i, 1],
-             col = as.character(color_groups[i, 2]),
-             kind = "ehull",
-             choices = c(2,3))
-}
-
-legend(x = par()$usr[1], y = par()$usr[4],
-       legend = c("Forest", "Generalist", "Savanna"),
-       col = c("black", "green", "dark orange"),
-       pt.bg = c("black", "green", "dark orange"),
-       pch = 21,
-       cex = 1.5,
-       bty = "n")
-
-segments(x0 = 0, y0 = 0, x1 = phy_trait_scores[, 1], y1 = phy_trait_scores[, 3])
-yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
-xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
-text(x = phy_trait_scores[, 1], y = phy_trait_scores[, 3], labels = phy_trait_names, cex = 1.3)
-
-dev.off()
-
-
 
 # #---------------------------------------------------------------------------------------------
 # Tables for supplement
@@ -529,22 +399,23 @@ groups <- matrix(data = c("S", "G", "S", "F", "G", "F"), nrow = 3, ncol = 2, byr
 pca_results_out <- cbind(as.data.frame(sp_scores), pca_groups)
 names(pca_results_out)[11] <- "FG"
 
-phy_results_out <- cbind(as.data.frame(phy_sp_scores), clean_species_ordered$FG)
-names(phy_results_out)[11] <- "FG"
+# phy_results_out <- cbind(as.data.frame(phy_sp_scores), clean_species_ordered$FG)
+# names(phy_results_out)[11] <- "FG"
 
 for(i in 1:3){
 
-h2_pca <- hotelling.test(x = pca_results_out[pca_results_out$FG == groups[i, 1], c(1,2)], 
-               y = pca_results_out[pca_results_out$FG == groups[i, 2], c(1,2)],
-               perm = FALSE)
-hotelling_results[i, 1] <- h2_pca$pval
-
-h2_phy <- hotelling.test(x = sp_scores[clean_species_ordered$FG == groups[i, 1], c(1,2)], 
-                       y = sp_scores[clean_species_ordered$FG == groups[i, 2], c(1,2)],
-                       perm = FALSE)
-hotelling_results[i, 2] <- h2_phy$pval
-
+  h2_pca <- hotelling.test(x = pca_results_out[pca_results_out$FG == groups[i, 1], c(1,2)], 
+                 y = pca_results_out[pca_results_out$FG == groups[i, 2], c(1,2)],
+                 perm = FALSE)
+  hotelling_results[i, 1] <- h2_pca$pval
 }
+
+# h2_phy <- hotelling.test(x = sp_scores[clean_species_ordered$FG == groups[i, 1], c(1,2)], 
+#                        y = sp_scores[clean_species_ordered$FG == groups[i, 2], c(1,2)],
+#                        perm = FALSE)
+# hotelling_results[i, 2] <- h2_phy$pval
+# 
+# }
 
 #*******************************************************************************************
 # Estimating trait distributions for plots
@@ -586,39 +457,86 @@ for(i in 1:nrow(plot_data)){#this is surely the worst way to do this
 
 trait_summary <- aggregate(plot_data[, c(6, 19:30)], by = list(plot_data$FG, plot_data$Life.Form), FUN = mean, na.rm = TRUE)
 
-
-for (i in 1:nrow(plot_data)){
-  #fill in non-measured trees with the mean value for their funcional type and habit
-  if(!was_measured[i]){
-  plot_data$Leaf_size[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                            trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Leaf_size"]
-  plot_data$Leaf_thickness[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                                 trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Leaf_thickness"]
-  plot_data$Height_at_5cm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                                trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Height_at_5cm"]
-  plot_data$Max_height[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                             trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Max_height"]
-  plot_data$Crown_ratio[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                                     trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Crown_ratio"]
-  plot_data$SLA[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                      trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "SLA"]
-  plot_data$Bark_at_5cm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                              trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Bark_at_5cm"]
-  plot_data$Bark_at_8mm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                              trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Bark_at_8mm"]
-
-  plot_data$est_bark_thickness[i] <- predict(bark_model_fg, newdata = list(max_d30 = plot_data$Max_D30[i], FG = plot_data$Code[i]))
-
-  plot_data$Wood_density[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                              trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Wood_density"]
-  plot_data$Light_at_5cm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
-                                              trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Light_at_5cm"]
-  }
-}
+# 
+# for (i in 1:nrow(plot_data)){
+#   #fill in non-measured trees with the mean value for their funcional type and habit
+#   if(!was_measured[i]){
+#   plot_data$Leaf_size[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                             trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Leaf_size"]
+#   plot_data$Leaf_thickness[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                                  trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Leaf_thickness"]
+#   plot_data$Height_at_5cm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                                 trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Height_at_5cm"]
+#   plot_data$Max_height[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                              trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Max_height"]
+#   plot_data$Crown_ratio[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                                      trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Crown_ratio"]
+#   plot_data$SLA[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                       trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "SLA"]
+#   plot_data$Bark_at_5cm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                               trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Bark_at_5cm"]
+#   plot_data$Bark_at_8mm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                               trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Bark_at_8mm"]
+# 
+#   plot_data$est_bark_thickness[i] <- predict(bark_model_fg, newdata = list(max_d30 = plot_data$Max_D30[i], FG = plot_data$Code[i]))
+# 
+#   plot_data$Wood_density[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                               trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Wood_density"]
+#   plot_data$Light_at_5cm[i] <- trait_summary[trait_summary$Group.1 == as.character(plot_data$FG[i]) &
+#                                               trait_summary$Group.2 == as.character(plot_data$Life.Form[i]), "Light_at_5cm"]
+#   }
+# }
 
 #--------------------------------------------------------------------------
-
 # Aggregate means for each plot, weighted by CSA of trees
+#--------------------------------------------------------------------------
+# plot_agg_traits <- data.frame(Plot = as.integer(seq(1:30)),
+#                               BA = numeric(30),
+#                               Leaf_size = numeric(30),
+#                               Leaf_thickness = numeric(30),
+#                               Max_height = numeric(30),
+#                               Height_at_5cm = numeric(30),
+#                               Crown_ratio = numeric(30),
+#                               SLA = numeric(30),
+#                               Bark_at_5cm = numeric(30),
+#                               Bark_at_8mm = numeric(30),
+#                               est_bark_thickness = numeric(30),
+#                               Wood_density = numeric(30),
+#                               Light_at_5cm = numeric(30),
+#                               Light_code = numeric(30),
+#                               Height_mean = numeric(30),
+#                               Density = numeric(30),
+#                               QMD = numeric(30),
+#                               PercentSavannaBA = numeric(30),
+#                               PercentSavannaDens = numeric(30)
+#                               )
+# 
+# 
+# for ( i in 1:30){
+#   trees_select <- plot_data[plot_data$P == i & !is.na(plot_data$CSA_BH_expand) & plot_data$Life.Form %in% c("tree", "treelet"), ]
+#   
+#   plot_agg_traits$Leaf_size[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Leaf_size), ]$Leaf_size, w = trees_select[!is.na(trees_select$Leaf_size), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Leaf_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Leaf_thickness), ]$Leaf_thickness, w = trees_select[!is.na(trees_select$Leaf_thickness), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Height_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Height_at_5cm), ]$Height_at_5cm, w = trees_select[!is.na(trees_select$Height_at_5cm), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Max_height[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Max_height), ]$Max_height, w = trees_select[!is.na(trees_select$Max_height), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Crown_ratio[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Crown_ratio), ]$Crown_ratio, w = trees_select[!is.na(trees_select$Crown_ratio), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$SLA[i] <- weighted.mean(x = trees_select[!is.na(trees_select$SLA), ]$SLA, w = trees_select[!is.na(trees_select$SLA), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Bark_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_5cm), ]$Bark_at_5cm, w = trees_select[!is.na(trees_select$Bark_at_5cm), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Bark_at_8mm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_8mm), ]$Bark_at_8mm, w = trees_select[!is.na(trees_select$Bark_at_8mm), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$est_bark_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$est_bark_thickness), ]$est_bark_thickness, w = trees_select[!is.na(trees_select$est_bark_thickness), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Wood_density[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Wood_density), ]$Wood_density, w = trees_select[!is.na(trees_select$Wood_density), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Light_at_5cm[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light_at_5cm), ]$Light_at_5cm, w = trees_select[!is.na(trees_select$Light_at_5cm), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Light_code[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light.code), ]$Light.code, w = trees_select[!is.na(trees_select$Light.code), ]$CSA_BH_expand, na.rm = TRUE)
+#   plot_agg_traits$Height_mean[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Ht), ]$Ht, w = trees_select[!is.na(trees_select$Ht), ]$CSA_BH_expand, na.rm = TRUE)
+# 
+#   #some other useful variables
+#   plot_agg_traits$BA[i] <- sum(trees_select$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+#   plot_agg_traits$Density[i] <- sum(trees_select$Density_expand, na.rm = TRUE)
+#   plot_agg_traits$QMD[i] <- sqrt((plot_agg_traits$BA[i] / plot_agg_traits$Density[i]) / 0.00007854)
+#   ba_savanna <- sum(trees_select[trees_select$FG == "S", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+#   plot_agg_traits$PercentSavannaBA[i] <- ba_savanna / plot_agg_traits$BA[i]
+#   plot_agg_traits$PercentSavannaDens[i] <- sum(trees_select[trees_select$FG == "S", "Density_expand"], na.rm= TRUE) / plot_agg_traits$Density[i]
+# }
 
 plot_agg_traits <- data.frame(Plot = as.integer(seq(1:30)),
                               BA = numeric(30),
@@ -639,51 +557,43 @@ plot_agg_traits <- data.frame(Plot = as.integer(seq(1:30)),
                               QMD = numeric(30),
                               PercentSavannaBA = numeric(30),
                               PercentSavannaDens = numeric(30)
-                              )
+)
 
 
 for ( i in 1:30){
-  trees_select <- plot_data[plot_data$P == i & !is.na(plot_data$CSA_BH_expand) & plot_data$Life.Form %in% c("tree", "treelet"), ]
+  trees_select <- plot_data[plot_data$P == i & !is.na(plot_data$Density_expand) & plot_data$Life.Form %in% c("tree", "treelet"), ]
   
-  plot_agg_traits$Leaf_size[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Leaf_size), ]$Leaf_size, w = trees_select[!is.na(trees_select$Leaf_size), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Leaf_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Leaf_thickness), ]$Leaf_thickness, w = trees_select[!is.na(trees_select$Leaf_thickness), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Height_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Height_at_5cm), ]$Height_at_5cm, w = trees_select[!is.na(trees_select$Height_at_5cm), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Max_height[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Max_height), ]$Max_height, w = trees_select[!is.na(trees_select$Max_height), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Crown_ratio[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Crown_ratio), ]$Crown_ratio, w = trees_select[!is.na(trees_select$Crown_ratio), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$SLA[i] <- weighted.mean(x = trees_select[!is.na(trees_select$SLA), ]$SLA, w = trees_select[!is.na(trees_select$SLA), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Bark_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_5cm), ]$Bark_at_5cm, w = trees_select[!is.na(trees_select$Bark_at_5cm), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Bark_at_8mm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_8mm), ]$Bark_at_8mm, w = trees_select[!is.na(trees_select$Bark_at_8mm), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$est_bark_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$est_bark_thickness), ]$est_bark_thickness, w = trees_select[!is.na(trees_select$est_bark_thickness), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Wood_density[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Wood_density), ]$Wood_density, w = trees_select[!is.na(trees_select$Wood_density), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Light_at_5cm[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light_at_5cm), ]$Light_at_5cm, w = trees_select[!is.na(trees_select$Light_at_5cm), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Light_code[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light.code), ]$Light.code, w = trees_select[!is.na(trees_select$Light.code), ]$CSA_BH_expand, na.rm = TRUE)
-  plot_agg_traits$Height_mean[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Ht), ]$Ht, w = trees_select[!is.na(trees_select$Ht), ]$CSA_BH_expand, na.rm = TRUE)
-
+  plot_agg_traits$Leaf_size[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Leaf_size), ]$Leaf_size, w = trees_select[!is.na(trees_select$Leaf_size), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Leaf_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Leaf_thickness), ]$Leaf_thickness, w = trees_select[!is.na(trees_select$Leaf_thickness), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Height_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Height_at_5cm), ]$Height_at_5cm, w = trees_select[!is.na(trees_select$Height_at_5cm), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Max_height[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Max_height), ]$Max_height, w = trees_select[!is.na(trees_select$Max_height), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Crown_ratio[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Crown_ratio), ]$Crown_ratio, w = trees_select[!is.na(trees_select$Crown_ratio), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$SLA[i] <- weighted.mean(x = trees_select[!is.na(trees_select$SLA), ]$SLA, w = trees_select[!is.na(trees_select$SLA), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Bark_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_5cm), ]$Bark_at_5cm, w = trees_select[!is.na(trees_select$Bark_at_5cm), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Bark_at_8mm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_8mm), ]$Bark_at_8mm, w = trees_select[!is.na(trees_select$Bark_at_8mm), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$est_bark_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$est_bark_thickness), ]$est_bark_thickness, w = trees_select[!is.na(trees_select$est_bark_thickness), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Wood_density[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Wood_density), ]$Wood_density, w = trees_select[!is.na(trees_select$Wood_density), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Light_at_5cm[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light_at_5cm), ]$Light_at_5cm, w = trees_select[!is.na(trees_select$Light_at_5cm), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Light_code[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light.code), ]$Light.code, w = trees_select[!is.na(trees_select$Light.code), ]$Density_expand, na.rm = TRUE)
+  plot_agg_traits$Height_mean[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Ht), ]$Ht, w = trees_select[!is.na(trees_select$Ht), ]$Density_expand, na.rm = TRUE)
+  
   #some other useful variables
-  plot_agg_traits$BA[i] <- sum(trees_select$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$BA[i] <- sum(trees_select$CSA_30_expand, na.rm = TRUE) / 10000 * 10
   plot_agg_traits$Density[i] <- sum(trees_select$Density_expand, na.rm = TRUE)
   plot_agg_traits$QMD[i] <- sqrt((plot_agg_traits$BA[i] / plot_agg_traits$Density[i]) / 0.00007854)
-  ba_savanna <- sum(trees_select[trees_select$FG == "S", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  ba_savanna <- sum(trees_select[trees_select$FG == "S", ]$CSA_30_expand, na.rm = TRUE) / 10000 * 10
   plot_agg_traits$PercentSavannaBA[i] <- ba_savanna / plot_agg_traits$BA[i]
   plot_agg_traits$PercentSavannaDens[i] <- sum(trees_select[trees_select$FG == "S", "Density_expand"], na.rm= TRUE) / plot_agg_traits$Density[i]
 }
 
 
-tiff(filename="./plots/community_weighted_traits.tiff", 
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in", 
-     width = 7, 
-     height=7, 
-     pointsize=12, 
-     res=600)
-
-
+#--------------------------------------------------------------------------------------
+# CWM analysis
 
 traits_to_plot <- names(plot_agg_traits)[3:13]
 
 traits_to_plot <- traits_to_plot[c(1, 2, 6, 3, 4, 5, 7, 8, 9, 10, 11)]
+
 
 traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         "Leaf thickness (mm)",
@@ -696,8 +606,20 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         "  Bark thickness\nat 8mm dia. (mm)",
                         "Bark thickness (mm)",
                         expression(paste("Wood density (g cm"^"-3",")")),
-                        "         Light code\nat 5 cm dia. (unitless)"
-                        )
+                        "         Light code\nat 5 cm dia. (unitless)")
+
+#Generate Figure xx
+
+tiff(filename="./plots/community_weighted_traits.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 7, 
+     height=7, 
+     pointsize=12, 
+     res=600)
+
 par(mfrow = c(4, 3))
 par(oma = c(1,1,3,0), mar = c(4,5,1,1), family = "sans")
 
@@ -743,11 +665,130 @@ for(i in 1:length(traits_to_plot)){
     }
   abline(coef(temp)[, 1], lty = ifelse(temp$coefficients[2, 4] < 0.05, 1, 2))
   
-  
 }
 
 dev.off()
 
+#---------------------------------------------------------------------------------------
+# SNC analysis
+#---------------------------------------------------------------------------------------
+traits <- clean_species[, -c(1, 3, 4, 15, 16)] 
+rownames(traits) <- traits$Code
+traits <- traits[, -1]
+
+#initialize species x plot abundance array
+abund <- array(0, dim = c(30, length(unique(plot_data$Code))),
+               dimnames = list(sites = seq(1:30),
+                               species = unique(plot_data$Code)))
+
+#weight abundance by basal area
+for(i in 1:30){
+  for(j in 1:length(unique(plot_data$Code))){
+    abund[i, j] <- sum(plot_data[plot_data$Code == colnames(abund)[j] &
+                                   plot_data$P == i, "Density_expand"], na.rm = TRUE)
+  }
+}
+
+setdiff( rownames(traits), attr(abund, "dimnames")$species)
+#[1] "BARU"  "DAEL"  "DUFU"  "PEWI"  "SOLY"  "STPO " "CECR" 
+
+abund <- abund[, attr(abund, "dimnames")$species %in% rownames(traits)]
+abund <- abund[, order(attr(abund, "dimnames")$species)]
+apply(abund, 2, FUN = sum)
+
+traits <- traits[rownames(traits) %in% attr(abund, "dimnames")$species, ]
+traits <- traits[order(rownames(traits)), ]
+
+traits_std <- scale(traits[, sapply(traits, is.numeric)])
+
+traits <- traits_std
+
+## L: an abundance data table, here taken from a negative binomial (10 communities x 5 species)
+## T: a vector with a trait measured for the species (vector t in the paper)
+## E: a vector with an environmental variable (vector e in the paper)
+
+L <- as.matrix(abund)
+cs <- colSums(L)
+
+for(i in 1:ncol(L)){
+  L[, i] <- L[, i] / colSums(L)[i]
+}
+
+SNC <- plot_agg_traits$BA %*% L
+
+
+########################################
+## compute standard SNC/CWM correlations
+########################################
+
+
+
+## compute standard SNC
+SNC <- apply(L, 2, function(x) weighted.mean(E, w = x))
+## compute standard correlation between SNC and T
+print(cor.test(SNC, T, na.rm = TRUE))
+
+
+
+
+tiff(filename="./plots/species_niche_centroids.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 7, 
+     height=7, 
+     pointsize=12, 
+     res=600)
+
+par(mfrow = c(4, 3))
+par(oma = c(1,1,3,0), mar = c(4,5,1,1), family = "sans")
+
+for(i in 1:length(traits_to_plot)){
+  
+  trait <- traits_to_plot[i]
+  
+  plot(plot_agg_traits[, eval(substitute(trait))] ~ plot_agg_traits$BA,
+       xlab = "",
+       ylab = "",
+       ylim = c(min(plot_agg_traits[, eval(substitute(trait))]), max(plot_agg_traits[, eval(substitute(trait))]) * 1.05))
+  
+  temp <- summary(lm( plot_agg_traits[, eval(substitute(trait))] ~ plot_agg_traits$BA))
+  
+  if(!(i %in% c(3,4,5))){
+    text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
+         y = par()$usr[4] - .08*(par()$usr[4] - par()$usr[3]),
+         pos = 4, 
+         labels = paste("r =", (round(sqrt(temp$r.squared), 2) * sign(coef(temp)[2,1])) ))
+    text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
+         y = par()$usr[4] - .2*(par()$usr[4] - par()$usr[3]),  
+         pos = 4, 
+         labels = ifelse(coef(temp)[2, 4] > 0.001,
+                         paste("p =", round(coef(temp)[2, 4], 3)),
+                         "p < 0.001"))
+  } else{
+    text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
+         y = par()$usr[3] + .08*(par()$usr[4] - par()$usr[3]),
+         pos = 4, 
+         labels = paste("r =", (round(sqrt(temp$r.squared), 2) * sign(coef(temp)[2,1])) ))
+    text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
+         y = par()$usr[3] + .2*(par()$usr[4] - par()$usr[3]),  
+         pos = 4, 
+         labels = ifelse(coef(temp)[2, 4] > 0.001,
+                         paste("p =", round(coef(temp)[2, 4], 3)),
+                         "p < 0.001"))
+  }
+  
+  mtext(side = 2, text = traits_names_clean[i], line = 2, cex = 0.8)
+  mtext(side = 3, text = paste0("(", letters[i], ")"), line = 0.7, at = 2, cex = 0.8)
+  if(i %in% c(9,10,11)){
+    mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 2.8)
+  }
+  abline(coef(temp)[, 1], lty = ifelse(temp$coefficients[2, 4] < 0.05, 1, 2))
+  
+}
+
+dev.off()
 
 
 #----------------------------------------------------------------------------------------
@@ -834,68 +875,87 @@ tiff(filename="./plots/functional_diversity.tiff",
 par(mfrow = c(3, 2))
 par(oma = c(2,2,0,0), mar = c(4,4,1,1), family = "sans")
 
-FRic_lm <- (lm(FD_plots$FRic ~ plot_agg_traits$BA))
-summary(FRic_lm)
+FRic_lm <- summary((lm(FD_plots$FRic ~ plot_agg_traits$BA)))
+
 plot(FD_plots$FRic ~ plot_agg_traits$BA, 
      xlab = "BA",
      ylab = "FRic")
 abline(coef(FRic_lm))
 text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
-     labels = paste0("r = ", round(sqrt(summary(FRic_lm)$r.squared), 2)))
-text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3), 
-     labels = paste0("p = ", round(summary(FRic_lm)$coefficients[2, 4], 6)))
+     pos = 4, 
+     labels = paste("r =", (round(sqrt(FRic_lm$r.squared), 2) * sign(coef(FRic_lm)[2,1])) ))
+text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+     pos = 4, 
+     labels = ifelse(coef(FRic_lm)[2, 4] > 0.001,
+                     paste("p =", round(coef(FRic_lm)[2, 4], 3)),
+                     "p < 0.001"))
+
 text(x = 3, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .1), labels = "(a)", cex = 1.7)
 
 
-FDiv_lm <- lm(FD_plots$FDiv ~ plot_agg_traits$BA)
-summary(FDiv_lm)
+FDiv_lm <- summary(lm(FD_plots$FDiv ~ plot_agg_traits$BA))
+
 plot(FD_plots$FDiv ~ plot_agg_traits$BA,
      xlab = "BA",
      ylab = "FDiv")
 abline(coef(FDiv_lm))
 text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
-     labels = paste0("r = ", round(sqrt(summary(FDiv_lm)$r.squared), 2)))
-text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3), 
-     labels = paste0("p = ", round(summary(FDiv_lm)$coefficients[2, 4], 6)))
+     pos = 4, 
+     labels = paste("r =", (round(sqrt(FDiv_lm$r.squared), 2) * sign(coef(FDiv_lm)[2,1])) ))
+text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+     pos = 4, 
+     labels = ifelse(coef(FDiv_lm)[2, 4] > 0.001,
+                     paste("p =", round(coef(FDiv_lm)[2, 4], 3)),
+                     "p < 0.001"))
 text(x = 3, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .1), labels = "(b)", cex = 1.7)
 
 
-FEve_lm <- lm(FD_plots$FEve ~ plot_agg_traits$BA)
+FEve_lm <- summary(lm(FD_plots$FEve ~ plot_agg_traits$BA))
 summary(FEve_lm)
 plot(FD_plots$FEve ~ plot_agg_traits$BA,
      xlab = "BA",
      ylab = "FEve")
 abline(coef(FEve_lm))
 text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
-     labels = paste0("r = ", round(sqrt(summary(FEve_lm)$r.squared), 2)))
-text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3), 
-     labels = paste0("p = ", round(summary(FEve_lm)$coefficients[2, 4], 6)))
+     pos = 4, 
+     labels = paste("r =", (round(sqrt(FEve_lm$r.squared), 2) * sign(coef(FEve_lm)[2,1])) ))
+text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+     pos = 4, 
+     labels = ifelse(coef(FEve_lm)[2, 4] > 0.001,
+                     paste("p =", round(coef(FEve_lm)[2, 4], 3)),
+                     "p < 0.001"))
 text(x = 3, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .1), labels = "(c)", cex = 1.7)
 
-FDis_lm <- lm(FD_plots$FDis ~ plot_agg_traits$BA)
-summary(FDis_lm)
+FDis_lm <- summary(lm(FD_plots$FDis ~ plot_agg_traits$BA))
 plot(FD_plots$FDis ~ plot_agg_traits$BA,
      xlab = "BA",
      ylab = "FDis")
 abline(coef(FDis_lm))
 text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
-     labels = paste0("r = ", round(sqrt(summary(FDis_lm)$r.squared), 2)))
-text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3), 
-     labels = paste0("p = ", round(summary(FDis_lm)$coefficients[2, 4], 6)))
+     pos = 4, 
+     labels = paste("r =", (round(sqrt(FDis_lm$r.squared), 2) * sign(coef(FDis_lm)[2,1])) ))
+text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+     pos = 4, 
+     labels = ifelse(coef(FDis_lm)[2, 4] > 0.001,
+                     paste("p =", round(coef(FDis_lm)[2, 4], 3)),
+                     "p < 0.001"))
 text(x = 3, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .1), labels = "(d)", cex = 1.7)
 
 
 div <- diversity(abund, index = "invsimpson")
-Simpson_lm <- lm(div ~ plot_agg_traits$BA)
-summary(Simpson_lm)
+Simpson_lm <- summary(lm(div ~ plot_agg_traits$BA))
 plot(div ~ plot_agg_traits$BA,
      xlab = "BA",
      ylab = "Inverse Simpson's Index")
 abline(coef(Simpson_lm))
 text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
-     labels = paste0("r = ", round(sqrt(summary(Simpson_lm)$r.squared), 2)))
-text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3), 
-     labels = paste0("p = ", round(summary(Simpson_lm)$coefficients[2, 4], 6)))
+     pos = 4, 
+     labels = paste("r =", (round(sqrt(Simpson_lm$r.squared), 2) * sign(coef(Simpson_lm)[2,1])) ))
+text(x = 23, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+     pos = 4, 
+     labels = ifelse(coef(Simpson_lm)[2, 4] > 0.001,
+                     paste("p =", round(coef(Simpson_lm)[2, 4], 3)),
+                     "p < 0.001"))
 text(x = 3, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .1), labels = "(e)", cex = 1.7)
 
 
