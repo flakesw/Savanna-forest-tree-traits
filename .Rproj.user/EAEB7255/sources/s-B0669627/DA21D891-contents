@@ -47,6 +47,8 @@ phyellipse <- function (ord, groups, display = "sites",
 
 #read data
 clean_species <- read.csv("./clean data/clean_species2018-11-07.csv")
+spList_orig <- read.csv("./raw data/lista_spp_plantas_families_sf_101618.csv")[-c(113, 130, 138, 176), ]
+spList_orig$Sp_name <- paste(spList_orig$Genus, " ", spList_orig$Species)
 plot_data <- read.csv("./Clean data/plot_data2018-11-07.csv")
 plot_data <- subset(plot_data, !is.na(CSA_30))
 bark_model <- readRDS("./clean data/bark_model.RDS")
@@ -58,26 +60,6 @@ clean_species$Total_leaf_size <- clean_species$Total_leaf_size/100
 
 clean_species_reduced <- clean_species[complete.cases(clean_species), ]
 clean_species_reduced <- clean_species_reduced[clean_species_reduced$Habit %in% c("Tree", "tree", "Treelet", "treelet"), ]
-
-#### Transformations
-#exploration
-# hist(clean_species_reduced$Leaf_size)
-# hist(log(clean_species_reduced$Leaf_size)) #yes
-# hist(clean_species_reduced$Total_leaf_size)
-# hist(log(clean_species_reduced$Total_leaf_size)) #yes
-# hist(clean_species_reduced$Leaf_thickness)
-# hist(log(clean_species_reduced$Leaf_thickness)) #yes
-# hist(clean_species_reduced$Max_height)#no
-# hist(clean_species_reduced$Height_at_5cm)#no
-# hist(clean_species_reduced$Crown_ratio)#no
-# hist(clean_species_reduced$Light_at_5cm)#no
-# hist(clean_species_reduced$SLA)
-# hist(log(clean_species_reduced$SLA))#yes
-# hist(clean_species_reduced$Bark_at_5cm)
-# hist(log(clean_species_reduced$Bark_at_5cm)) #yes
-# hist(clean_species_reduced$Bark_at_8mm)
-# hist(log(clean_species_reduced$Bark_at_8mm)) #yes
-# hist(clean_species_reduced$Wood_density)#no
 
 clean_species_reduced_orig <- clean_species_reduced
 clean_species_reduced_trans <- clean_species_reduced
@@ -96,7 +78,37 @@ tree <- readRDS("phylogeny_code.RDS")
 
 tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species$Code))
 
-# plot(tree_pruned, type = "fan")
+#plot the tree
+tiff(filename = "./plots/phylogeny_pruned.tiff",
+    width = 7,
+    height = 7,
+    units = "in",
+    pointsize = 8,
+    compression = "lzw",
+    res = 600)
+  
+  tree_pruned_plot <- tree_pruned
+  tree_pruned_plot$tip.label <- as.character(spList_orig[, "Sp_name"][match(tree_pruned$tip.label, spList_orig$Code)])
+  
+  sp_codes <- tree_pruned$tip.label
+  fg <- spList_orig[match(sp_codes, spList_orig$Code), "FG"]
+  fg <- fg[!is.na(fg)]
+  
+  color_groups <- data.frame(group = as.character(c("F", "G", "S")),
+                             col = as.character(c("black", "green", "dark orange")))
+  color_points <- as.character(color_groups[match(fg, color_groups$group), "col"])
+  
+  plot(tree_pruned_plot, type = "fan",
+       show.tip.label = TRUE,
+       tip.color = color_points)
+  legend(x = par()$usr[1], y = par()$usr[4], 
+         legend = c("Forest", "Generalist", "Savanna"), 
+         col = c("black", "green", "dark orange"), 
+         pt.bg = c("black", "green", "dark orange"), 
+         pch = 21,
+         cex = 1.3,
+         bty = "n")
+dev.off()
 
 #------------------------------------------------------------------------------
 # What proportion of tree species sampled? For results section
@@ -114,10 +126,10 @@ sampled_plot_ba$CSA_BH_expand / plot_ba$CSA_BH_expand
 #------------------------------------------------------------------------------
 # Bivariate analyses
 #------------------------------------------------------------------------------
-traits_names <- names(clean_species[-c(1:4, 13, 15, 16)])
+traits_names <- names(clean_species[-c(1:4, 15, 16)])
 
 # Calculate phylogenetic signal, ANOVA, Tukey's post-hoc, phylogenetic ANOVA
-log_trans <- c(1, 2, 5, 7, 8)
+log_trans <- c(1, 2, 5, 7, 8, 9) # which traits to test transformed
 
 #fix the tree
 tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species_reduced$Code)) # for phylogenetic ANOVA
@@ -173,6 +185,7 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         "         Light code\nat 5 cm dia. (unitless)",
                         expression(paste("Specific leaf area (cm"^"2", " g"^"-1", ")")),
                         "  Bark thickness\nat 5cm dia. (mm)",
+                        "  Bark thickness\nat 8mm dia. (mm)",
                         expression(paste("Wood density (g cm"^"-3",")")))
 
 tiff(filename="./plots/traits_by_FG.tiff", 
@@ -180,12 +193,12 @@ tiff(filename="./plots/traits_by_FG.tiff",
      antialias = "gray",
      compression = "lzw",
      units="in", 
-     width = 4.5, 
-     height=6, 
+     width = 7, 
+     height=4, 
      pointsize=9, 
      res=600)
 
-par(mfrow = c(3, 3),
+par(mfrow = c(2, 5),
     mar = c(2,6,2,0.5),
     oma = c(1, 0, 0, 0))
 
@@ -227,6 +240,7 @@ for (i in 1:length(traits_names)){
   
   pvals <- as.numeric(pvals_table[i, c(5:7)])
   names(pvals) <- c("G-S", "F-S", "F-G")
+  pvals <- ifelse(pvals < (0.05), TRUE, FALSE)
   tuke_letters <- multcompLetters(pvals, reversed=TRUE)$Letters[c(3,1,2)]
   
   #fixes letters sometimes being in the wrong order -- not sure why this happens?
@@ -238,12 +252,6 @@ for (i in 1:length(traits_names)){
   ylim <- par("usr")[c(3,4)]
   yrange <- ylim[2]-ylim[1]
   text(x = c(1,2,3), y = ylim[2] - yrange/10, labels = tuke_letters, cex = 1.2)
-  
-  
-  #plot the lambda value
-  lam <- round(pvals_table$lambda[i], digits = 2)
-  mtext(text = eval(bquote(expression(lambda ~ "=" ~ .(lam)))) , side = 3, at = 2.5, line = .3, cex = 0.85)
-  
   
 }
 
@@ -395,7 +403,7 @@ write.csv(species_scores_table, "./Model output/species_score_table.csv")
 
 hotelling_results <- data.frame("H2" = numeric(3))
 
-groups <- matrix(data = c("S", "G", "S"), nrow = 3, ncol = 1, byrow = TRUE)
+groups <- matrix(data = c("S", "G", "F", "G", "F", "S"), nrow = 3, ncol = 2, byrow = TRUE)
 
 pca_results_out <- cbind(as.data.frame(sp_scores), pca_groups)
 names(pca_results_out)[11] <- "FG"
@@ -404,8 +412,8 @@ names(pca_results_out)[11] <- "FG"
 # names(phy_results_out)[11] <- "FG"
 
 for(i in 1:3){
-  h2_pca <- hotelling.test(x = pca_results_out[pca_results_out$FG == groups[i, 1], c(1,2)], 
-                 y = pca_results_out[pca_results_out$FG == groups[i, 2], c(1,2)],
+  h2_pca <- hotelling.test(x = pca_results_out[pca_results_out$FG == groups[i,1], c(1:2)], 
+                 y = pca_results_out[pca_results_out$FG == groups[i,2], c(1:2)],
                  perm = FALSE)
   hotelling_results[i, 1] <- h2_pca$pval
 }
@@ -481,8 +489,15 @@ plot_agg_traits <- data.frame(Plot = as.integer(seq(1:30)),
                               Height_mean = numeric(30),
                               Density = numeric(30),
                               QMD = numeric(30),
-                              PercentSavannaBA = numeric(30),
-                              PercentSavannaDens = numeric(30)
+                              SavannaBA = numeric(30),
+                              SavannaDens = numeric(30),
+                              SavannaQMD = numeric(30),
+                              GeneralistBA = numeric(30),
+                              GeneralistDens = numeric(30),
+                              GeneralistQMD = numeric(30),
+                              ForestBA = numeric(30),
+                              ForestDens = numeric(30),
+                              ForestQMD = numeric(30)
                               )
 
 
@@ -503,13 +518,20 @@ for ( i in 1:30){
   plot_agg_traits$Light_code[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light.code), ]$Light.code, w = trees_select[!is.na(trees_select$Light.code), ]$Density_expand, na.rm = TRUE)
   plot_agg_traits$Height_mean[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Ht), ]$Ht, w = trees_select[!is.na(trees_select$Ht), ]$Density_expand, na.rm = TRUE)
 
-  #some other useful variables
-  plot_agg_traits$BA[i] <- sum(trees_select$CSA_30_expand, na.rm = TRUE) / 10000 * 10
-  plot_agg_traits$Density[i] <- sum(trees_select$Density_expand, na.rm = TRUE)
+  #some other useful structure variables
+  plot_agg_traits$BA[i] <- sum(trees_select$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$Density[i] <- sum(trees_select$Density_expand, na.rm = TRUE) * 10
   plot_agg_traits$QMD[i] <- sqrt((plot_agg_traits$BA[i] / plot_agg_traits$Density[i]) / 0.00007854)
-  ba_savanna <- sum(trees_select[trees_select$FG == "S", ]$CSA_30_expand, na.rm = TRUE) / 10000 * 10
-  plot_agg_traits$PercentSavannaBA[i] <- ba_savanna / plot_agg_traits$BA[i]
-  plot_agg_traits$PercentSavannaDens[i] <- sum(trees_select[trees_select$FG == "S", "Density_expand"], na.rm= TRUE) / plot_agg_traits$Density[i]
+  plot_agg_traits$SavannaBA[i] <- sum(trees_select[trees_select$FG == "S", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$SavannaDens[i] <- sum(trees_select[trees_select$FG == "S", "Density_expand"], na.rm= TRUE)  * 10 
+  plot_agg_traits$SavannaQMD[i] <- sqrt((plot_agg_traits$SavannaBA[i] / plot_agg_traits$SavannaDens[i]) / 0.00007854)
+  plot_agg_traits$GeneralistBA[i] <- sum(trees_select[trees_select$FG == "G", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$GeneralistDens[i] <- sum(trees_select[trees_select$FG == "G", "Density_expand"], na.rm= TRUE) * 10 
+  plot_agg_traits$GeneralistQMD[i] <- sqrt((plot_agg_traits$GeneralistBA[i] / plot_agg_traits$GeneralistDens[i]) / 0.00007854)
+  plot_agg_traits$ForestBA[i] <- sum(trees_select[trees_select$FG == "F", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$ForestDens[i] <- sum(trees_select[trees_select$FG == "F", "Density_expand"], na.rm= TRUE) * 10
+  plot_agg_traits$ForestQMD[i] <- sqrt((plot_agg_traits$ForestBA[i] / plot_agg_traits$ForestDens[i]) / 0.00007854)
+  
 }
 
 
@@ -604,7 +626,7 @@ traits <- traits[, -1]
 
 traits_to_plot <- names(traits)
 
-traits_to_plot <- traits_to_plot[c(1, 2, 7, 3, 4, 5, 8, 9, 10, 6)]
+traits_to_plot <- traits_to_plot[c(1, 2, 7, 3, 4, 5, 8, 9, 10, 6)] #reorder
 
 traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         "Leaf thickness (mm)",
@@ -623,7 +645,7 @@ abund <- array(0, dim = c(30, length(unique(plot_data$Code))),
                dimnames = list(sites = seq(1:30),
                                species = unique(plot_data$Code)))
 
-#weight abundance by basal area
+#weight abundance by density
 for(i in 1:30){
   for(j in 1:length(unique(plot_data$Code))){
     abund[i, j] <- sum(plot_data[plot_data$Code == colnames(abund)[j] &
@@ -631,9 +653,7 @@ for(i in 1:30){
   }
 }
 
-#setdiff( rownames(traits), attr(abund, "dimnames")$species)
-#[1] "BARU"  "DAEL"  "DUFU"  "PEWI"  "SOLY"  "STPO " "CECR" these species do not have abundance data, so need to be excluded
-
+#match species that have trait data and abundances in the plot
 abund <- abund[, attr(abund, "dimnames")$species %in% rownames(traits)]
 abund <- abund[, order(attr(abund, "dimnames")$species)]
 apply(abund, 2, FUN = sum)
@@ -648,12 +668,13 @@ for(i in 1:ncol(L)){
   L[, i] <- L[, i] / colSums(L)[i]
 }
 
-SNC <- as.numeric(as.character(plot_agg_traits$BA %*% L))
+SNC <- as.numeric(as.character(plot_agg_traits$BA %*% L)) #calculate weighted SNC
 
-summary(lm(traits$Light_at_5cm ~ SNC))
-plot(traits$Light_at_5cm ~ SNC)
+color_groups <- data.frame(group = as.character(c("F", "G", "S")),
+                           col = as.character(c("black", "green", "dark orange")))
+color_points <- as.character(color_groups[match(pca_groups, color_groups$group), "col"]) #species are the same as in the pca
 
-
+# Generate supplemental figure xx
 tiff(filename="./plots/species_niche_centroids.tiff", 
      type = "cairo",
      antialias = "gray",
@@ -674,13 +695,13 @@ for(i in 1:length(traits_to_plot)){
   plot(SNC ~ traits[, eval(substitute(trait))],
        xlab = "",
        ylab = "",
-       ylim = c(-5, 40),
+       ylim = c(0, 30),
        pch = 21, 
-       bg = "grey")
+       bg = color_points)
   
   temp <- summary(lm( SNC ~ traits[, eval(substitute(trait))]))
   
-  if(!(i %in% c(3,4,5,9))){
+  if(!(i %in% c(3,4,5,9))){ #plot p-values in different locations for different plots
     text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
          y = par()$usr[4] - .08*(par()$usr[4] - par()$usr[3]),
          pos = 4, 
@@ -714,8 +735,8 @@ for(i in 1:length(traits_to_plot)){
     mtext(side = 2, outer = TRUE,
           text = expression(paste("Species niche centroid for basal area (m"^"2", " ha"^"-1", ")")), cex = 1.15, line = -2)
   # }
-  
-  abline(coef(temp)[, 1], lty = ifelse(temp$coefficients[2, 4] < (0.05/10), 1, 2))
+  #make line dashed or solid depending upon the p-value, with bonferroni correction
+  abline(coef(temp)[, 1], lty = ifelse(temp$coefficients[2, 4] < (0.05/10), 1, 2)) 
   
 }
 
@@ -746,7 +767,6 @@ for(i in 1:30){
 
 abund <- abund[, attr(abund, "dimnames")$species %in% rownames(traits)]
 abund <- abund[, order(attr(abund, "dimnames")$species)]
-apply(abund, 2, FUN = sum)
 
 traits <- traits[rownames(traits) %in% attr(abund, "dimnames")$species, ]
 traits <- traits[order(rownames(traits)), ]
@@ -803,10 +823,10 @@ FRic_lm <- summary((lm(FD_plots$FRic ~ plot_agg_traits$BA)))
        pch = 21,
        bg = "grey")
   abline(coef(FRic_lm)[, 1])
-  text(x = 20, y = par("usr")[3] + ((par("usr")[4] - par("usr")[3]) * .3), 
+  text(x = 15, y = par("usr")[3] + ((par("usr")[4] - par("usr")[3]) * .3), 
        pos = 4, 
        labels = paste("r =", (round(sqrt(FRic_lm$r.squared), 2) * sign(coef(FRic_lm)[2,1])) ))
-  text(x = 20, y = par("usr")[3] + ((par("usr")[4] - par("usr")[3]) * .2),
+  text(x = 15, y = par("usr")[3] + ((par("usr")[4] - par("usr")[3]) * .2),
        pos = 4, 
        labels = ifelse(coef(FRic_lm)[2, 4] > 0.001,
                        paste("p =", round(coef(FRic_lm)[2, 4], 3)),
@@ -823,10 +843,10 @@ FDiv_lm <- summary(lm(FD_plots$FDiv ~ plot_agg_traits$BA))
        pch = 21,
        bg = "grey")
   abline(coef(FDiv_lm)[, 1])
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
+  text(x = 15, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
        pos = 4, 
        labels = paste("r =", (round(sqrt(FDiv_lm$r.squared), 2) * sign(coef(FDiv_lm)[2,1])) ))
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+  text(x = 15, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
        pos = 4, 
        labels = ifelse(coef(FDiv_lm)[2, 4] > 0.001,
                        paste("p =", round(coef(FDiv_lm)[2, 4], 3)),
@@ -843,10 +863,10 @@ FEve_lm <- summary(lm(FD_plots$FEve ~ plot_agg_traits$BA))
        pch = 21,
        bg = "grey")
   abline(coef(FEve_lm)[, 1], lty = 2)
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
+  text(x = 15, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
        pos = 4, 
        labels = paste("r =", (round(sqrt(FEve_lm$r.squared), 2) * sign(coef(FEve_lm)[2,1])) ))
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+  text(x = 15, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
        pos = 4, 
        labels = ifelse(coef(FEve_lm)[2, 4] > 0.001,
                        paste("p =", round(coef(FEve_lm)[2, 4], 3)),
@@ -863,13 +883,13 @@ FDis_lm <- summary(lm(FD_plots$FDis ~ plot_agg_traits$BA))
        pch = 21,
        bg = "grey")
   abline(coef(FDis_lm)[, 1])
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
+  text(x = 0, y = par("usr")[3] + ((par("usr")[4] - par("usr")[3]) * .22), 
        pos = 4, 
-       labels = paste("r =", (round(sqrt(FDis_lm$r.squared), 2) * sign(coef(FDis_lm)[2,1])) ))
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+       labels = paste("r =", (round(sqrt(FRic_lm$r.squared), 2) * sign(coef(FRic_lm)[2,1])) ))
+  text(x = 0, y = par("usr")[3] + ((par("usr")[4] - par("usr")[3]) * .12),
        pos = 4, 
-       labels = ifelse(coef(FDis_lm)[2, 4] > 0.001,
-                       paste("p =", round(coef(FDis_lm)[2, 4], 3)),
+       labels = ifelse(coef(FRic_lm)[2, 4] > 0.001,
+                       paste("p =", round(coef(FRic_lm)[2, 4], 3)),
                        "p < 0.001"))
   mtext(side = 3, text = "(d)", 
         at = (par()$usr[1] + .1*(par()$usr[2] - par()$usr[1])), 
@@ -884,10 +904,10 @@ div <- diversity(abund, index = "invsimpson")
        pch = 21,
        bg = "grey")
   abline(coef(Simpson_lm)[, 1])
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
+  text(x = 0, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .2), 
        pos = 4, 
        labels = paste("r =", (round(sqrt(Simpson_lm$r.squared), 2) * sign(coef(Simpson_lm)[2,1])) ))
-  text(x = 20, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
+  text(x = 0, y = par("usr")[4] - ((par("usr")[4] - par("usr")[3]) * .3),
        pos = 4, 
        labels = ifelse(coef(Simpson_lm)[2, 4] > 0.001,
                        paste("p =", round(coef(Simpson_lm)[2, 4], 3)),
@@ -930,320 +950,186 @@ names(clam_merge)[1] <- "Code"
 clam_merge <- join(clam_merge, clean_species[, c(2, 16)], by = c("Code"))
 table(clam_merge$FG, clam_merge$Classes)[, c(2, 1, 3, 4)]
 
+#----------------------------------------------------------------------------------
+# Functional type ~ BA
+#----------------------------------------------------------------------------------
+tiff(filename="./plots/change_in_FTs.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 4, 
+     height=4, 
+     pointsize=12, 
+     res=600)
 
-#------------------------------------------------------------------------------
-# Extra junk
-#------------------------------------------------------------------------------
+par(mfrow = c(2,1))
+par(oma = c(2,1.7,0,1))
+par(mar = c(1,2,1,0))
+cols <- c("Green", "Orange", "Black")
+pchs <- c(15,16,17)
 
-# #--------------------------------------------------------------------------------------------
-# # Simulate fire removal
-# #--------------------------------------------------------------------------------------------
-# 
-# trees_after_fire <- plot_data[plot_data$, ] #this causes some problems 
-# #probably by filtering out some species without bark estimates
-# 
-# 
-# trees_after_agg <- data.frame(Plot = as.integer(seq(1:30)),
-#                               BA = numeric(30),
-#                               FG = numeric(30),
-#                               PercentSavannaBA = numeric(30),
-#                               PercentSavannaDens = numeric(30)
-# )
-# 
-# for(i in 1:30){
-#   trees_select <- trees_after_fire[trees_after_fire$P == i, ]
-#   trees_after_agg$BA[i] <- sum(trees_select$CSA_BH_expand, na.rm = TRUE) / 10000
-#   trees_after_agg$Density[i] <- sum(trees_select$Density_expand, na.rm = TRUE)
-#   
-#   
-#   ba_savanna <- sum(trees_select[trees_select$FG == "S", ]$CSA_BH_expand, na.rm = TRUE) / 10000
-#   trees_after_agg$PercentSavannaBA[i] <- ba_savanna / trees_after_agg$BA[i]
-#   trees_after_agg$PercentSavannaDens[i] <- sum(trees_select[trees_select$FG == "S", "Density_expand"], na.rm= TRUE) / trees_after_agg$Density[i]
+i <- 1
+plot(NA, ylim = c(0, 35), xlim = c(0, 36), xaxt = "n", ylab = "", xlab = "")
+legend(x = -1, y = 36, legend = c("Savanna", "Generalist", "Forest"), 
+       col = cols[c(2,1,3)], pch = pchs[c(2,1,3)], bty = "n")
+mtext(side = 2, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 2)
+mtext(side = 3, text = "(a)", at = 0)
+axis(1, labels = FALSE)
+for (type in c("GeneralistBA", "SavannaBA", "ForestBA")){
+  points(plot_agg_traits[[type]] ~ BA, data = plot_agg_traits, 
+         pch = pchs[i], bg = cols[i], col = cols[i])
+  newdata <- seq(0, 36, length.out = 100)
+  mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
+  preds <- predict(mod, newdata = list(BA = newdata))
+  lines(preds ~ newdata, col = cols[i], lwd = 2)
+  i <- i+1
+}
+
+i <- 1
+plot(NA, ylim = c(0, 10000), xlim = c(0, 36), xaxt = "n", ylab = "", xlab = "")
+mtext(side = 2, text = expression(paste("Density (", "ha"^"-1", ")")), line = 2)
+mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 1, outer = TRUE)
+mtext(side = 3, text = "(b)", at = 0)
+axis(1, labels = TRUE, padj = -.5)
+for (type in c("GeneralistDens", "SavannaDens", "ForestDens")){
+  points(plot_agg_traits[[type]] ~ BA, data = plot_agg_traits, 
+         pch = pchs[i], bg = cols[i], col = cols[i])
+  newdata <- seq(0, 36, length.out = 100)
+  mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
+  preds <- predict(mod, newdata = list(BA = newdata))
+  lines(preds ~ newdata, col = cols[i], lwd = 2)
+  i <- i+1
+}
+
+
+# i <- 1
+# plot(NA, ylim = c(0, 25), xlim = c(0, 36), ylab = "", xlab = "")
+# mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), outer = TRUE)
+# mtext(side = 2, text = "Quadratic mean \ndiameter (cm)", line = 2)
+# for (type in c("GeneralistQMD", "SavannaQMD", "ForestQMD")){
+#   points(plot_agg_traits[[type]] ~ BA, data = plot_agg_traits, 
+#          pch = 21, bg = cols[i], col = cols[i])
+#   newdata <- seq(0, 36, length.out = 100)
+#   mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
+#   preds <- predict(mod, newdata = list(BA = newdata))
+#   lines(preds ~ newdata, col = cols[i], lwd = 2)
+#   i <- i+1
 # }
-# 
-# plot(PercentSavannaDens ~ BA, data = trees_after_agg)
-# 
-# plot(PercentSavannaDens ~ BA, data = plot_agg_traits)
-# 
-# plot(NA,
-#      xlim = c(0, 3),
-#      ylim = c(0, 1),
-#      xlab = "Basal Area (m2 per .1 ha)",
-#      ylab = "Percent Savanna Species")
-# 
-# points(PercentSavannaBA ~ BA, data = plot_agg_traits, col = "red")
-# abline(coef(lm(PercentSavannaBA ~ BA, data = plot_agg_traits)), col = "red")
-# points(PercentSavannaBA ~ BA, data = trees_after_agg, col = "blue")
-# abline(coef(lm(PercentSavannaBA ~ BA, data = trees_after_agg)), col = "blue")
-# 
-# legend(x = 2.3, y = .8, 
-#        legend = c("Before Selection (Bark)", "After Selection (Bark)"), 
-#        col = c("red", "blue"), 
-#        pch = 1)
-# arrows(x0 = plot_agg_traits$BA, y0 = plot_agg_traits$PercentSavannaBA,
-#        x1 = trees_after_agg$BA, y1 = trees_after_agg$PercentSavannaBA)
-# 
-# plot(I(trees_after_agg$PercentSavannaDens - plot_agg_traits$PercentSavannaDens) ~ plot_agg_traits$BA)
-# 
-# plot(I((trees_after_agg$BA - plot_agg_traits$BA)/plot_agg_traits$BA)  ~ plot_agg_traits$BA)
+  
+dev.off()
+#############################################################################################
+# PCA with weighted circle sizes
+#############################################################################################
+abund <- array(0, dim = c(30, length(unique(plot_data$Code))),
+               dimnames = list(sites = seq(1:30),
+                               species = unique(plot_data$Code)))
+
+#weight abundance by basal area
+for(i in 1:30){
+  for(j in 1:length(unique(plot_data$Code))){
+    abund[i, j] <- sum(plot_data[plot_data$Code == colnames(abund)[j] &
+                                   plot_data$P == i, "Density_expand"], na.rm = TRUE)
+  }
+}
 
 
+abund <- abund[, colnames(abund) %in% pca_sp_names]
 
-# tiff(filename="./plots/figure_for_proposal.tiff", 
-#      type = "cairo",
-#      antialias = "gray",
-#      compression = "lzw",
-#      units="in", 
-#      width = 4, 
-#      height=4, 
-#      pointsize=11, 
-#      res=600)
-# 
-# par(mfrow = c(2,1))
-# par(mar = c(4,6,.5,.5),
-#     oma = c(0,0,0,0))
-# plot(SLA ~ BA, data = plot_agg_traits, 
-#      xlab = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), 
-#      ylab = "",
-#      cex = 1.5,
-#      pch = 21, 
-#      bg = "grey")
-# mtext("Specific leaf area", side = 2, line = 3.2)
-# mtext(expression(paste("(cm"^"2", " g"^"-1", ")")), side = 2, line = 2)
-# abline(coef(lm(SLA ~ BA, data = plot_agg_traits)), lwd = 2.5)
-# plot(Bark_at_5cm ~ BA, data = plot_agg_traits, 
-#      ylab = "",
-#      xlab = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")),
-#      cex = 1.5,
-#      pch = 21, 
-#      bg = "grey")
-# mtext("Bark thickness\nat 5cm dia. (mm)", side = 2, line = 2.5)
-# abline(coef(lm(Bark_at_5cm ~ BA, data = plot_agg_traits)), lwd = 2.5)
-# 
-# dev.off()
-# 
-# 
-# tiff(filename="./plots/figure_for_proposal2.tiff", 
-#      type = "cairo",
-#      antialias = "gray",
-#      compression = "lzw",
-#      units="in", 
-#      width = 4, 
-#      height=4, 
-#      pointsize=11, 
-#      res=600)
-# 
-# par(mfrow = c(2,1))
-# par(mar = c(4,6,.5,.5),
-#     oma = c(0,0,0,0))
-# plot(Height_at_5cm ~ BA, data = plot_agg_traits, 
-#      xlab = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), 
-#      ylab = "",
-#      cex = 1.5,
-#      pch = 21, 
-#      bg = "grey")
-# mtext("Height at 5 cm (m)", side = 2, line = 3.2)
-# abline(coef(lm(Height_at_5cm ~ BA, data = plot_agg_traits)), lwd = 2.5)
-# 
-# plot(Light_at_5cm ~ BA, data = plot_agg_traits, 
-#      ylab = "",
-#      xlab = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")),
-#      cex = 1.5,
-#      pch = 21, 
-#      bg = "grey")
-# mtext("Light code at 5 cm", side = 2, line = 2.5)
-# abline(coef(lm(Light_at_5cm ~ BA, data = plot_agg_traits)), lwd = 2.5)
-# 
-# dev.off()
+abund_tot <- abund[c(29, 13, 12), ]
 
-# #---------------------------------------------------------------------------------
-# # Community analysis
-# #---------------------------------------------------------------------------------
-# comm_mat_ba <- array(0, dim = c(30, length(unique(plot_data$Code))),
-#                      dimnames = list(sites = seq(1:30),
-#                                      species = unique(plot_data$Code)))
-# 
-# i <- j <- 1
-# # abundance scaled to % of plot -- not sure why I did this
-# for(i in 1:30){
-#   for(j in 1:length(unique(plot_data$Code))){
-#     BA <- plot_agg_traits$BA[i]
-#     comm_mat_ba[i, j] <- sum(plot_data[plot_data$Code == colnames(comm_mat_ba)[j] &
-#                                          plot_data$P == i, "CSA_30"]) /10000 / BA
-#   }
-# }
-# 
-# 
-# 
-# # metaMDS(comm, distance = "bray", k = 2, try = 20, trymax = 20,
-# #         engine = c("monoMDS", "isoMDS"), autotransform =TRUE,
-# #         noshare = (engine == "isoMDS"), wascores = TRUE, expand = TRUE,
-# #         trace = 1, plot = FALSE, previous.best, ...)
-# 
-# nms <- metaMDS(comm_mat_ba)
-# 
-# nms
-# stressplot(nms)
-# 
-# plot(nms)
-# 
-# ordiplot(nms,type="n")
-# orditorp(nms,display="species",col="red",air=0.01)
-# orditorp(nms,display="sites",cex=1.25,air=0.01)
-# 
-# 
-# 
-# # Ordination of traits
-# 
-# community_trait_matrix <- array(0, dim = c(30, 8),
-#                                 dimnames = list(sites = seq(1:30),
-#                                                 species = seq(1:8)))
-# 
-# 
-# 
-# for(i in 1:30){
-#   for(j in 1:8){
-#     community_trait_matrix[i, j] <- plot_agg_traits[i, j+2]
-#   }
-# }
-# 
-# nms_traits <- metaMDS(community_trait_matrix)
-# 
-# 
-# nms_traits
-# stressplot(nms_traits)
-# 
-# plot(nms_traits)
-# 
-# ordiplot(nms_traits,type="n")
-# orditorp(nms_traits,display="species",col="red",air=0.01)
-# orditorp(nms_traits,display="sites",cex=1.25,air=0.01)
-# 
-# 
-# library("vegan")
+abund_tot <- abund_tot[, order(colnames(abund_tot))]
 
-# 
-# #-----------------------------------------------------------------------------------------
-# # Digging deeper in the light and fire data
-# #-----------------------------------------------------------------------------------------
-# #savanna plots
-# hist(plot_data$Light.code[plot_data$P %in% c(1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25:30)])
-# #forest plots
-# hist(plot_data$Light.code[plot_data$P %in% c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24)])
-# 
-# hist(plot_data[!(plot_data$P %in% c(1,2, 9, 10, 17, 18)), ]$Char.height)
-# 
-# light_plot_data  <- plot_data[!is.na(plot_data$Light.code) & !is.na(plot_data$Char.height), ]
-# newdata <- data.frame(Light.code = seq(1, 5, length.out = 100))
-# 
-# 
-# 
-# #all burned plots
-# all_light_data <- light_plot_data[!(light_plot_data$P %in% c(1, 2, 9, 10, 17, 18)), ]
-# names(all_light_data)[2] <- "Plot"
-# 
-# plot(Char.height ~ Light.code, data = all_light_data)
-# 
-# light_char_lm <- lm(Char.height ~ poly(Light.code, 3), data = all_light_data)
-# 
-# summary(light_char_lm)
-# 
-# newdata$pred1 <- predict(light_char_lm, newdata = newdata)
-# 
-# lines(newdata$pred1 ~ newdata$Light.code)
-# 
-# #just cerradao burned plots
-# cerradao_light_data <- light_plot_data[light_plot_data$P %in% c(4, 6, 8, 12, 16, 20, 22, 24), ]
-# 
-# plot(Char.height ~ Light.code, data = cerradao_light_data)
-# 
-# light_char_lm <- lm(Char.height ~ poly(Light.code, 3), data = cerradao_light_data)
-# 
-# summary(light_char_lm)
-# 
-# newdata$pred2 <- predict(light_char_lm, newdata = newdata)
-# 
-# lines(newdata$pred2 ~ newdata$Light.code)
-# 
-# #just cerrado burned plots
-# cerrado_light_data <- light_plot_data[light_plot_data$P %in% c(3, 5, 7, 11, 13, 15, 19, 21, 23, 25:30), ]
-# 
-# plot(Char.height ~ Light.code, data = cerrado_light_data)
-# 
-# light_char_lm <- lm(Char.height ~ poly(Light.code, 3), data = cerrado_light_data)
-# 
-# summary(light_char_lm)
-# 
-# newdata$pred3 <- predict(light_char_lm, newdata = newdata)
-# 
-# lines(newdata$pred3 ~ newdata$Light.code)
-# 
-# 
-# 
-# 
-# 
-# 
-# ### lm for light with interaction with BA
-# all_light_data <- join(all_light_data, plot_agg_traits[, c("Plot", "BA")], by = "Plot")
-# 
-# light_char_lm <- lm(log(Char.height+.1) ~ Light.code + BA, data = all_light_data)
-# 
-# summary(light_char_lm)
-# 
-# plot(allEffects(light_char_lm, partial.residuals = TRUE))
-# 
-# 
-# library(earth)
-# ba_char_lm <- lm(Char.height ~ BA, data = all_light_data)
-# summary(ba_char_lm)
-# plot(Char.height ~ BA, data = all_light_data)
-# abline(coef(ba_char_lm))
-# 
-# ba_char_mars <- earth(Char.height ~ BA, data = all_light_data)
-# plot(ba_char_mars)
-# summary(ba_char_mars)
-# 
-# plot(Char.height ~ BA, data = all_light_data)
-# # abline(coef(ba_char_lm))
-# preds <- predict(ba_char_mars, newdata = data.frame("BA" = seq(0, 28, length.out = 200)))
-# lines(preds ~ seq(0, 28, length.out = 200), lwd = 2)
-# 
-# ## Aggregate data
-# 
-# light_agg <- aggregate(all_light_data, by = list(all_light_data$Plot), FUN = mean)
-# light_se <- aggregate(all_light_data, by = list(all_light_data$Plot), FUN = sd)
-# plot(light_agg$Char.height ~ light_agg$BA)
-# arrows(x0 = light_agg$BA, y0 = light_agg$Char.height,
-#        x1 = light_agg$BA, y1 = I(light_agg$Char.height + light_se$Char.height) )
-# 
-# #Combined figure
-# library(RColorBrewer)
-# col_map <- densCols(x = all_light_data$BA, y = all_light_data$Char.height, nbin = 128,
-#                     colramp = colorRampPalette(brewer.pal(9, "YlGnBu")[-c(1:2)], bias = 2))
-# 
-# tiff(filename="./plots/char_height_BA.tiff", 
-#      type = "cairo",
-#      antialias = "gray",
-#      compression = "lzw",
-#      units="in", 
-#      width = 5, 
-#      height=3, 
-#      pointsize=9, 
-#      res=600)
-# 
-# plot(Char.height/100 ~ BA, data = all_light_data,
-#      ylim = c(0, 4),
-#      xlab = expression(paste("Tree Basal Area (m"^"2", "ha"^"-1", ")")),
-#      ylab = "Char height (m)",
-#      pch = 21,
-#      cex = 0.7,
-#      bg = col_map,
-#      col = col_map)
-# # abline(coef(ba_char_lm))
-# lines(preds/100 ~ seq(0, 27.5, length.out = 200), lwd = 2)
-# points(light_agg$Char.height/100 ~ light_agg$BA, pch = 150,
-#        bg = "black",
-#        cex = 1.5)
-# 
-# dev.off()
-# 
+hull <- chull(y = sp_scores[, 2], x = sp_scores[, 1])
+FRic_max <- polyarea(x = sp_scores[hull, 1], y = sp_scores[hull, 2])
+
+
+tiff(filename="./plots/traits_PCA_axes_1_2_circles.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 7, 
+     height=5, 
+     pointsize=9, 
+     res=600)
+
+par(mfrow = c(1,3))
+par(oma = c(3,3,0,0))
+color_groups <- data.frame(group = as.character(c("F", "G", "S")),
+                           col = as.character(c("black", "green", "dark orange")))
+
+for(i in 1:3){
+color_points <- as.character(color_groups[match(pca_groups, color_groups$group), "col"])[abund_tot[i, ] > 0]
+sp_scores_red <- sp_scores[abund_tot[i, ] > 0, ]
+
+abund_red <- abund_tot[i, abund_tot[i, ] > 0]
+
+plot(NA,
+     xlab = "", ylab = "", xaxt = "n", yaxt = "n",
+     xlim = c( (min(c(sp_scores[, 1], trait_scores[, 1]))),
+               (max(c(sp_scores[, 1], trait_scores[, 1])))),
+     ylim = c( (min(c(sp_scores[, 2], trait_scores[, 2]))),
+               (max(c(sp_scores[, 2], trait_scores[, 2])))))
+
+mtext(outer = FALSE, cex = 1.25, text = ifelse(i == 1, expression(paste("Savanna, BA = 0.56 m"^"2", " ha"^"-1")),
+                                            ifelse(i == 2, expression(paste("Woodland, BA = 11.9 m"^"2", " ha"^"-1")),
+                                                   expression(paste("Forest, BA = 30.4 m"^"2", " ha"^"-1")))))
+
+axis(1, cex = 1.2)
+axis(2, cex = 1.2)
+
+# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
+
+symbols(y = sp_scores_red[, 2], x = sp_scores_red[, 1], 
+        circles=sqrt(abund_red/pi), inches=0.15,
+        bg=color_points,
+        add = TRUE)
+# text(y = sp_scores_red[, 2], x = sp_scores_red[, 1], labels = rownames(sp_scores_red), col = "black", cex = .7)
+abline(h = 0)
+abline(v = 0)
+
+#Calculate and plot FRic
+hull <- chull(y = sp_scores_red[, 2], x = sp_scores_red[, 1])
+polygon(sp_scores_red[hull, c(1,2)])
+text(x = -0.7, y = -1.1, 
+     labels = paste("FRic = ",
+                    round(polyarea(x = sp_scores_red[hull, 1], y = sp_scores_red[hull, 2])/FRic_max, 3)),
+     cex = 1.4)
+
+
+#calculate weighted centroid of traits
+center <- c(weighted.mean(x = sp_scores_red[, 1], w = abund_red),
+            weighted.mean(x = sp_scores_red[, 2], w = abund_red))
+points(x = center[1], y = center[2],  cex = 2, pch = 21, bg = "blue")
+
+#Draw weighted segments
+segments(x0 = center[1], x1 = sp_scores_red[, 1], 
+         y0 = center[2], y1 = sp_scores_red[, 2],
+         lwd = (3 * abund_red/ max(abund_red)))
+
+#Calculate and plot FDis
+dists <- apply(sp_scores_red[, c(1,2)], 1, FUN = function(x){dist(rbind(x, center))})
+
+FDis <- sum(abund_red * dists) / sum(abund_red)
+
+text(x = -0.7, y = -1.2, labels = paste("FDis = ", round(FDis, digits = 3)),
+     cex = 1.4)
+
+if(i == 2){
+  
+  legend(x = par()$usr[1], y = par()$usr[4], 
+         legend = c("Forest", "Generalist", "Savanna", "Centroid"), 
+         col = c("black", "green", "dark orange", "dark blue"), 
+         pt.bg = c("black", "green", "dark orange", "dark blue"), 
+         pch = 21,
+         cex = 1.5,
+         bty = "n")
+}
+
+}
+
+
+mtext(side = 1, outer = TRUE, text = "PC1", cex = 1.2)
+mtext(side = 2, outer = TRUE, text = "PC2", cex = 1.2)
+dev.off()

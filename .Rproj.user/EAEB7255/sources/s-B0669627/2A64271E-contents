@@ -409,29 +409,11 @@ result<-S.PhyloMaker(spList=spList, tree=phylo, nodes=nodes)      # run the func
 # plot(result$Scenario.3,cex=1.1,main="Scenario Three")
 
 tree <- result$Scenario.3
-str(tree)
-
-saveRDS(tree, file = "phylogeny.RDS")
+# str(tree)
+# 
+# saveRDS(tree, file = "phylogeny.RDS")
 
 #relabel tips with code instead of species name
 tree$tip.label <- as.character(spList_orig[, "Code"][match(tree$tip.label, sub(" ", "_", spList$species))])
 
 saveRDS(tree, file = "phylogeny_code.RDS")
-
-#plot phylogeny
-pdf(file = "phylogeny.pdf",width = 12, height = 12, pointsize = 9)
-plot(tree, type = "fan")
-dev.off()
-
-
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-
