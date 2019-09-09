@@ -1,4 +1,8 @@
 ## To do
+# get fresh leaf measurements from notebook, enter
+# get SLA leaf mass measurements
+# transfer SLA data for a few species from flammability, sum leaf areas and  mass to calc sla
+
 
 #load libraries
 library("plyr")
@@ -11,7 +15,7 @@ source("./S.PhyloMaker-master/R_codes for S.PhyloMaker") #phylogeny tools
 leaf <- read.csv(".\\raw data\\leaf_traits.csv", stringsAsFactors = FALSE)
 wood <- read.csv(".\\raw data\\twig_traits.csv", stringsAsFactors = FALSE)
 field <- read.csv(".\\raw data\\field_data.csv", stringsAsFactors = FALSE)
-sp_info <- read.csv(".\\raw data\\lista_spp_plantas_edited_sf100818.csv", stringsAsFactors=FALSE)
+sp_info <- read.csv(".\\raw data\\lista_spp_plantas_families_sf_090819.csv", stringsAsFactors=FALSE)
 plot_data <- read.csv("./raw data/30_parcelas_arvores_2015_complet_out_2015_sf_edits.csv", stringsAsFactors = FALSE)
 charlight <- read.csv("./raw data/CharLight_final_102218.csv")
 frost <- read.csv("./raw data/FrostDamageAll.csv")
@@ -53,7 +57,7 @@ sp_info[sp_info$Species == "Ocotea velutina", "Code"] <- "OCVE2"
 sp_info$Life.Form <- as.factor(tolower(sp_info$Life.Form))
 
 #is there a more elegant way to do this than joinjoinjoinjoin?
-clean_data <- join(join(join(join(field_reduced, leaf_reduced, by = c("Individual"), type = "left"),
+clean_data <- join(join(join(join(field_reduced, leaf_reduced, by = c("Individual"), type = "full"),
                    wood_reduced, by = c("Individual"), type = "left"),
                    sp_info, by = c("Code"), type = "left"), 
                    max_heights[, c(2,3)], by = c("Code"), type = "left")
@@ -76,6 +80,8 @@ for(i in 1:nrow(clean_data)){ #why is this all in a for loop?
 }
 
 clean_data$Ht <- clean_data$Ht/100
+
+setdiff(sp_info$Code, clean_data$Code)
 
 #Write data
 write.csv(clean_data, ".\\clean data\\clean_data.csv")
@@ -313,19 +319,7 @@ for(i in 1:length(unique(clean_data$Code))){
       twig_model  <- lm(Twig.bark.thickness ~ log(Outer.diameter), data = data_select)
     }
   clean_species$Bark_at_8mm[i] <- predict(twig_model, newdata = list(Outer.diameter = 8))
-  
   clean_species$Bark_at_5cm[i] <- predict(bark_model_global, newdata = list(max_d30 = 5, Code = code_select))
-  
-  # #plot the bark thickness regressions
-  # plot(Mean.Bark.thickness ~ D30_eff, data = bark_table[bark_table$Code == code_select, ],
-  #      main = code_select,
-  #      xlim = c(0, 30))
-  # D30_eff <- bark_table[bark_table$Code == code_select, ]$D30_eff
-  # preds <- predict(bark_model_global, 
-  #                  newdata = list(D30_eff = D30_eff, 
-  #                                 Code = rep(code_select, times = length(D30_eff), na.rm = TRUE)))
-  # lines(preds[order(preds)] ~ D30_eff[order(preds)])
-  # points(x = 5, y = clean_species$Bark_at_5cm[i], pch = 3)
   
   } else{
     clean_species$Bark_at_8mm[i] <- NA
@@ -341,6 +335,7 @@ for(i in 1:length(unique(clean_data$Code))){
   if(nrow(ht_subset) >= 5 &
      min(ht_subset$D30_eff, na.rm = TRUE) < 6 &
      max(ht_subset$D30_eff, na.rm = TRUE) >4){
+    
     height_model <- lm(Ht ~ log(D30_eff), data = ht_subset)
     clean_species$Height_at_5cm[i] <- predict(height_model, newdata = list(D30_eff = 5))
   } else{clean_species$Height_at_5cm[i] <- NA}

@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1549849190464.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "FEFA9E49",
+    "lastKnownWriteTime" : 7308604914264011873,
+    "last_content_update" : 1549849190464,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "5377BE74",
+        "caption" : "leaf",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=leaf&cache_key=5377BE74",
+        "displayedObservations" : 717,
+        "environment" : "",
+        "object" : "leaf",
+        "preview" : 0,
+        "totalObservations" : 717,
+        "variables" : 29
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

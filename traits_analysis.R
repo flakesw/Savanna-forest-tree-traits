@@ -8,7 +8,6 @@ library("plyr")
 library("vegan")
 library("multcomp")
 library("multcompView")
-library("pca3d")
 library("effects")
 library("plotrix")
 library("ape")
@@ -19,6 +18,7 @@ library("Hotelling")
 
 setwd("C:\\Users\\Sam\\Google Drive\\Projects\\Savanna traits")
 set.seed(45750762)
+
 #----------------------------------------------------------------------------
 # Function to plot elliptical hulls for phylogenetic PCA,
 # modified from vegan::ordiellipse. I removed a bunch of functionality,
@@ -114,8 +114,8 @@ dev.off()
 # What proportion of tree species sampled? For results section
 #------------------------------------------------------------------------------
 #calculate using both clean_species and clean_species_reduced
-total_ba <- sum(plot_data$CSA_BH_expand, na.rm = TRUE)/10000
-sampled_ba <- sum(plot_data[plot_data$Code %in% clean_species$Code, ]$CSA_BH_expand, na.rm = TRUE)/10000
+total_ba <- sum(plot_data$Density_expand, na.rm = TRUE)
+sampled_ba <- sum(plot_data[plot_data$Code %in% clean_species$Code, ]$Density_expand, na.rm = TRUE)
 sampled_ba/total_ba
 
 plot_ba <- aggregate(plot_data[, c("P", "CSA_BH_expand")], by = list(plot_data$P), FUN = function(x){sum(x, na.rm=TRUE)})
@@ -175,7 +175,7 @@ for (i in 1:length(traits_names)){
 write.csv(pvals_table, "./Model output/FG_traits_pvals.csv")
 
 #---------------------------
-# Figure 1: trait differences between functional groups
+# Figure 2: trait differences between functional groups
 
 traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         "Leaf thickness (mm)",
@@ -950,8 +950,38 @@ names(clam_merge)[1] <- "Code"
 clam_merge <- join(clam_merge, clean_species[, c(2, 16)], by = c("Code"))
 table(clam_merge$FG, clam_merge$Classes)[, c(2, 1, 3, 4)]
 
+#------------------------------------------------------------------------------
+# Change in FTs over stand BA
+#
+# TODO: make tables and figures for supplement
+#------------------------------------------------------------------------------
+summary(lm(plot_agg_traits$SavannaBA ~ plot_agg_traits$BA))
+plot(plot_agg_traits$SavannaBA ~ plot_agg_traits$BA)
+summary(lm(plot_agg_traits$SavannaDens ~ plot_agg_traits$Density))
+plot(plot_agg_traits$SavannaDens ~ plot_agg_traits$Density)
+
+summary(lm(plot_agg_traits$GeneralistBA ~ plot_agg_traits$BA))
+plot(plot_agg_traits$GeneralistBA ~ plot_agg_traits$BA)
+summary(lm(plot_agg_traits$GeneralistDens ~ plot_agg_traits$Density))
+plot(plot_agg_traits$GeneralistDens ~ plot_agg_traits$Density)
+
+summary(lm(plot_agg_traits$ForestBA ~ plot_agg_traits$BA))
+plot(plot_agg_traits$ForestBA ~ plot_agg_traits$BA)
+summary(lm(plot_agg_traits$ForestDens ~ plot_agg_traits$Density))
+plot(plot_agg_traits$ForestDens ~ plot_agg_traits$Density)
+
+
+summary(lm(I(plot_agg_traits$SavannaBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA))
+summary(lm(I(plot_agg_traits$GeneralistBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA))
+summary(lm(I(plot_agg_traits$ForestBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA))
+
+summary(lm(I(plot_agg_traits$SavannaDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
+summary(lm(I(plot_agg_traits$GeneralistDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
+summary(lm(I(plot_agg_traits$ForestDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
+
+
 #----------------------------------------------------------------------------------
-# Functional type ~ BA
+# Figure 1: Functional type ~ BA
 #----------------------------------------------------------------------------------
 tiff(filename="./plots/change_in_FTs.tiff", 
      type = "cairo",
@@ -969,34 +999,37 @@ par(mar = c(1,2,1,0))
 cols <- c("Green", "Orange", "Black")
 pchs <- c(15,16,17)
 
-i <- 1
-plot(NA, ylim = c(0, 35), xlim = c(0, 36), xaxt = "n", ylab = "", xlab = "")
+plot(NA, ylim = c(0, 35), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
 legend(x = -1, y = 36, legend = c("Savanna", "Generalist", "Forest"), 
        col = cols[c(2,1,3)], pch = pchs[c(2,1,3)], bty = "n")
 mtext(side = 2, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 2)
 mtext(side = 3, text = "(a)", at = 0)
 axis(1, labels = FALSE)
+
 for (type in c("GeneralistBA", "SavannaBA", "ForestBA")){
   points(plot_agg_traits[[type]] ~ BA, data = plot_agg_traits, 
          pch = pchs[i], bg = cols[i], col = cols[i])
-  newdata <- seq(0, 36, length.out = 100)
+  newdata <- seq(0, 28, length.out = 100)
   mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
+  print(coef(summary(mod))[2, 4])
   preds <- predict(mod, newdata = list(BA = newdata))
   lines(preds ~ newdata, col = cols[i], lwd = 2)
   i <- i+1
 }
 
-i <- 1
-plot(NA, ylim = c(0, 10000), xlim = c(0, 36), xaxt = "n", ylab = "", xlab = "")
+
+plot(NA, ylim = c(0, 10000), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
 mtext(side = 2, text = expression(paste("Density (", "ha"^"-1", ")")), line = 2)
 mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 1, outer = TRUE)
 mtext(side = 3, text = "(b)", at = 0)
 axis(1, labels = TRUE, padj = -.5)
+
 for (type in c("GeneralistDens", "SavannaDens", "ForestDens")){
   points(plot_agg_traits[[type]] ~ BA, data = plot_agg_traits, 
          pch = pchs[i], bg = cols[i], col = cols[i])
-  newdata <- seq(0, 36, length.out = 100)
+  newdata <- seq(0, 28, length.out = 100)
   mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
+  print(coef(summary(mod))[2, 4])
   preds <- predict(mod, newdata = list(BA = newdata))
   lines(preds ~ newdata, col = cols[i], lwd = 2)
   i <- i+1

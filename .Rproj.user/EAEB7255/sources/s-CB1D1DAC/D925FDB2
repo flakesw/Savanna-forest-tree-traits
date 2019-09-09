@@ -12,15 +12,15 @@
     "path" : null,
     "project_path" : null,
     "properties" : {
-        "cacheKey" : "48D99ABE",
+        "cacheKey" : "A231270F",
         "caption" : "clean_species",
-        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=clean_species&cache_key=48D99ABE",
-        "displayedObservations" : 99,
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=clean_species&cache_key=A231270F",
+        "displayedObservations" : "99",
         "environment" : "",
         "object" : "clean_species",
-        "preview" : 0,
-        "totalObservations" : 99,
-        "variables" : 16
+        "preview" : "0",
+        "totalObservations" : "99",
+        "variables" : "16"
     },
     "relative_order" : 6,
     "source_on_save" : false,
