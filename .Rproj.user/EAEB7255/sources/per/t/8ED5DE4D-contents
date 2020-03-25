@@ -1,8 +1,4 @@
 ## To do
-# get fresh leaf measurements from notebook, enter
-# get SLA leaf mass measurements
-# transfer SLA data for a few species from flammability, sum leaf areas and  mass to calc sla
-
 
 #load libraries
 library("plyr")
@@ -15,7 +11,7 @@ source("./S.PhyloMaker-master/R_codes for S.PhyloMaker") #phylogeny tools
 leaf <- read.csv(".\\raw data\\leaf_traits.csv", stringsAsFactors = FALSE)
 wood <- read.csv(".\\raw data\\twig_traits.csv", stringsAsFactors = FALSE)
 field <- read.csv(".\\raw data\\field_data.csv", stringsAsFactors = FALSE)
-sp_info <- read.csv(".\\raw data\\lista_spp_plantas_families_sf_090819.csv", stringsAsFactors=FALSE)
+sp_info <- read.csv(".\\raw data\\lista_spp_plantas_families_sf_09252019.csv", stringsAsFactors=FALSE)
 plot_data <- read.csv("./raw data/30_parcelas_arvores_2015_complet_out_2015_sf_edits.csv", stringsAsFactors = FALSE)
 charlight <- read.csv("./raw data/CharLight_final_102218.csv")
 frost <- read.csv("./raw data/FrostDamageAll.csv")
@@ -48,12 +44,6 @@ field_reduced$max_DBH <- vapply(strsplit(field_reduced$DBH, split = ","),
 field_reduced$D30_eff <- vapply(strsplit(field_reduced$D30, split = ","), 
                            1, FUN = function(x){return(sqrt(sum(((as.numeric(unlist(x)))^2), na.rm = TRUE)))})
 
-#Change some codes for synonymous species
-sp_info[sp_info$Species == "Campomanesia guaviroba", "Code"] <- "CAGU2"
-sp_info[sp_info$Species == "Chromolaena maximilianii", "Code"] <- "CHMA2"
-sp_info[sp_info$Species == "Myrcia tomentosa" & sp_info$FG == "S", "Code"] <- "MYTO_S" #MYTO has two entries, changing this makes it a generalist
-sp_info[sp_info$Species == "Ocotea puberula", "Code"] <- "OCPU2"
-sp_info[sp_info$Species == "Ocotea velutina", "Code"] <- "OCVE2"
 sp_info$Life.Form <- as.factor(tolower(sp_info$Life.Form))
 
 #is there a more elegant way to do this than joinjoinjoinjoin?
@@ -211,7 +201,7 @@ plot_data_no_equals$DBH_eff <- sqrt(plot_data_no_equals$CSA_BH/pi)
 
 plot_data_no_equals$D30_eff <- sqrt(plot_data_no_equals$CSA_30/pi)
 
-plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(2:4)], by = c("Code"), type = "left")
+plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(5,6,7,8)], by = c("Code"), type = "left")
 
 write.csv(plot_data_no_equals, paste0("./Clean data/plot_data", Sys.Date(), ".csv"))
 
@@ -301,29 +291,37 @@ clean_species <- data.frame(Code = unique(clean_data$Code),
                             stringsAsFactors = FALSE
 )
 
-i <- 9
 for(i in 1:length(unique(clean_data$Code))){
   code_select <- unique(clean_data$Code)[i]
   data_select <- clean_data[clean_data$Code == code_select, ]
   
   clean_species$N[i] <- nrow(data_select)#length(which(complete.cases(data_select)))
-  clean_species$Leaf_size[i] <- mean(data_select$Leaflet.or.leaf.size..mm2., na.rm = TRUE)
-  clean_species$Total_leaf_size[i] <- mean(data_select$Total.leaf.size..mm2., na.rm = TRUE)
-  clean_species$Leaf_thickness[i] <- mean(data_select$Mean.Leaf.thickness, na.rm = TRUE)
-  clean_species$SLA[i] <-mean(data_select$SLA..cm2.g.1., na.rm = TRUE)
-  clean_species$Wood_density[i] <- mean(data_select$Density..g.mL., na.rm = TRUE)
+  if(sum(!is.na(data_select$Leaflet.or.leaf.size..mm2.))>=3){
+    clean_species$Leaf_size[i] <- mean(data_select$Leaflet.or.leaf.size..mm2., na.rm = TRUE)}
+  
+  if(sum(!is.na(data_select$Total.leaf.size..mm2.))>=3){
+  clean_species$Total_leaf_size[i] <- mean(data_select$Total.leaf.size..mm2., na.rm = TRUE)}
+  
+  if(sum(!is.na(data_select$Mean.Leaf.thickness))>=3){
+  clean_species$Leaf_thickness[i] <- mean(data_select$Mean.Leaf.thickness, na.rm = TRUE)}
+  
+  if(sum(!is.na(data_select$SLA..cm2.g.1.))>=3){
+  clean_species$SLA[i] <-mean(data_select$SLA..cm2.g.1., na.rm = TRUE)}
+  
+  if(sum(!is.na(data_select$Density..g.mL.))>=3){
+  clean_species$Wood_density[i] <- mean(data_select$Density..g.mL., na.rm = TRUE)}
   
   #create regressions for predicting bark thicknesses
-  if(nrow(data_select) >=3){
-    if(sum(!is.na(data_select$Twig.bark.thickness))>3){
-      twig_model  <- lm(Twig.bark.thickness ~ log(Outer.diameter), data = data_select)
+  if(sum(!is.na(data_select$Twig.bark.thickness))>=3){
+      
+      clean_species$Bark_at_8mm[i] <- mean(data_select$Relative.bark.thickness, na.rm = TRUE) * 8
+      }else{
+    clean_species$Bark_at_8mm[i] <- NA}
+    
+  if(sum(!is.na(data_select$Mean.Bark.thickness))>=3 & 
+     max(data_select$max_d30, na.rm = TRUE) >= 5){
+    clean_species$Bark_at_5cm[i] <- predict(bark_model_global, newdata = list(max_d30 = 5, Code = code_select))
     }
-  clean_species$Bark_at_8mm[i] <- predict(twig_model, newdata = list(Outer.diameter = 8))
-  clean_species$Bark_at_5cm[i] <- predict(bark_model_global, newdata = list(max_d30 = 5, Code = code_select))
-  
-  } else{
-    clean_species$Bark_at_8mm[i] <- NA
-  }
   
   
   #Height at 5cm
@@ -333,8 +331,8 @@ for(i in 1:length(unique(clean_data$Code))){
   ht_subset <- ht_subset[ht_subset$D30_eff > 0 & !(is.na(ht_subset$D30_eff)) & !(is.na(ht_subset$Ht)), ]
 
   if(nrow(ht_subset) >= 5 &
-     min(ht_subset$D30_eff, na.rm = TRUE) < 6 &
-     max(ht_subset$D30_eff, na.rm = TRUE) >4){
+     min(ht_subset$D30_eff, na.rm = TRUE) <= 5 &
+     max(ht_subset$D30_eff, na.rm = TRUE) >=5){
     
     height_model <- lm(Ht ~ log(D30_eff), data = ht_subset)
     clean_species$Height_at_5cm[i] <- predict(height_model, newdata = list(D30_eff = 5))
@@ -375,6 +373,15 @@ for(i in 1:length(unique(clean_data$Code))){
   
 }
 
+#replace zeroes with NAs
+clean_species[, -c(1,2,14,15)] <- apply(clean_species[, -c(1,2,14,15)], c(1,2), FUN = function(x){ifelse(x == 0, NA, x)})
+
+clean_species[, -c(1,2,14,15)] <- apply(clean_species[, -c(1,2,14,15)], c(1,2), FUN = function(x){ifelse(x<0, NA, x)})
+
+#sample size per trait? 
+N_spp <- apply(clean_species, c(2), FUN = function(x){sum(!is.na(x))})
+N_ind <- apply(clean_data, c(2), FUN = function(x){sum(!is.na(x))})
+  
 write.csv(clean_species, paste0("./clean data/clean_species", Sys.Date(), ".csv"))
 
 #------------------------------------------------------------------------------
@@ -385,25 +392,43 @@ write.csv(clean_species, paste0("./clean data/clean_species", Sys.Date(), ".csv"
 
 
 #import species list and remove some duplicates
-spList_orig <- read.csv("./raw data/lista_spp_plantas_families_sf_101618.csv")[-c(113, 130, 138, 176), ]
+spList_orig <- read.csv("./raw data/lista_spp_plantas_families_sf_09252019.csv")
 spList_orig[!(spList_orig$FG %in% c("S", "F", "G")), "FG"] <- "G"
 spList_orig$FG <- droplevels(spList_orig$FG)
 
 #make species list in proper format
 spList <- data.frame(species = paste(spList_orig$Genus, spList_orig$Species, sep = " "),
                      genus = spList_orig$Genus,
-                     family = spList_orig$Family)
+                     family = spList_orig$Family,
+                     stringsAsFactors = FALSE)
 
 
 
-example<-read.csv("./S.PhyloMaker-master/example.splist",header=T, sep = "\t")       # read in the example species list.    
 phylo<-read.tree("./S.PhyloMaker-master/PhytoPhylo")      # read in the megaphylogeny.    
 nodes<-read.csv("./S.PhyloMaker-master/nodes",header=T, sep = "\t")     # read in the nodes information of the megaphylogeny.    
+# phylo <- drop.tip(phylo, 8791) #drop Ocotea pulchella to fix the myrtaceae
+# phylo <- drop.tip(phylo, 13609) #drop cupania vernalis to fix cupania/matayba
+# phylo <- drop.tip(phylo, c())#drop myrcia tomentosa and multiflora
+
+
+
+# tree_test <- drop.tip(phylo, phylo$tip.label[!(phylo$tip.label %in% sub(" ", "_", spList$species))])
+
 result<-S.PhyloMaker(spList=spList, tree=phylo, nodes=nodes)      # run the function S.PhyloMaker.    
 
 # plot(result$Scenario.3,cex=1.1,main="Scenario Three")
 
 tree <- result$Scenario.3
+
+#check on myrcias, pouteria ramiflora, 
+unique(clean_data$Code)[!(unique(clean_data$Code) %in% spList_orig$Code)]
+
+splist_test <- sub(" ", "_", spList$species)
+# splist_test[!(splist_test %in% phylo$tip.label)]
+phylo$tip.label[grep("Leptolobium", phylo$tip.label)]
+
+# spList_orig[spList_orig$Code %in% clean_species$Code, "Authority"]
+
 # str(tree)
 # 
 # saveRDS(tree, file = "phylogeny.RDS")

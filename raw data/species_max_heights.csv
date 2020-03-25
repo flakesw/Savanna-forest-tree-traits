@@ -86,7 +86,7 @@
 85,STAD,5,Lorenzi vol. 1,NA,
 86,STCA,10,Lorenzi vol. 1,NA,
 87,STFE,14,Lorenzi vol. 1,NA,
-88,STPO ,12,Lorenzi vol. 1,NA,10m IBGE
+88,STPO,12,Lorenzi vol. 1,NA,10m IBGE
 89,STRO,5.5,Plot,94,Not in books
 90,SYPU,8,Plot,43,Not in books
 91,VOTU,15,Plot,213,12m in Lorenzi
@@ -97,4 +97,21 @@
 96,TOFO,2.6,Plot,4,Not in books
 97,ZARH,12,Lorenzi vol. 1,NA,11m in plots
 98,ZEMO,2.8,Plot,4,2.8 also in field
-99,CECR,11.5,Field,5,Greater than 7m from Lorenzi
+99,CEPA,11.5,Field,5,Greater than 7m from Lorenzi
+100,TAAU,30,Barwick,,
+101,ERTO,4,FFESP,,
+102,ASTO,20,Useful Tropcal Plants,,
+103,ZETU,23,Lorenzi vol 1,,
+104,ERDE,8,Lorenzi vol 1,,
+105,HEAP,18,Lorenizi vol 1,,
+106,AESE,9.4,Field,,
+107,MAGU,14,Lorenzi vol 2,,
+108,CRFL,13,plot,,Greater than 10m from Lorenzi
+109,MISE,15,FFESP,,
+110,DAFA,8,Lorenzi vol 3,,
+111,GUVI,7,Lorenzi vol 2,,
+112,FAMO,12,plot,,FFESP says 6
+113,PORA,30,Lorenzi vol 1,,
+114,XYAR,6,Lorenzi vol 1,,
+115,BYLA,20,plot,,
+116,SYRE,18,plot,,
