@@ -1,4 +1,4 @@
-Genus,Species,Family,detail,Code,FG,Life Form,New name,Authority
+Genus,Species,Family,detail,Code,FG,Life Form,New.name,Authority
 Lithraea,molleoides,Anacardiaceae,,LIMO,F,tree,Lithraea molleoides,(Vell.) Engl.
 Tapirira,guianensis,Anacardiaceae,,TAGU,G,tree,Tapirira guianensis,Aubl.
 Annona,cacans,Annonaceae,,ANCA,F,tree,Annona cacans,Warm.
@@ -58,11 +58,11 @@ Erythroxylum,cuneifolium,Erythroxylaceae,,ERCU,S,shrub,Erythroxylum cuneifolium,
 Erythroxylum,deciduum,Erythroxylaceae,,ERDE,G,tree,Erythroxylum deciduum,A.St.-Hil.
 Erythroxylum,pelleterianum,Erythroxylaceae,,ERPE,G,treelet,Erythroxylum pelleterianum,
 Erythroxylum,suberosum,Erythroxylaceae,,ERSU,S,treelet,Erythroxylum suberosum,A.St.-Hil.
-Erythroxylum,tomentosum,Erythroxylaceae,,ERTO,S,treelet,Erythroxylum tomentosum,
+Erythroxylum,tortuosum,Erythroxylaceae,,ERTO,S,treelet,Erythroxylum tortuosum,
 Maprounea,guianensis,Euphorbiaceae,,MAGU,G,tree,Maprounea guianensis,Aubl.
 Actinostemon,schomburgkii,Euphorbiaceae,,ACSC,F,treelet,Actinostemon schomburgkii,
 Croton,floribundus,Euphorbiaceae,,CRFL,F,tree,Croton floribundus,Spreng.
-Anadenanthera,peregrina,Fabaceae,,ANFA,G,tree,Anadenanthera peregrina var. falcata,(Benth.) Altschul
+Anadenanthera,falcata,Fabaceae,,ANFA,G,tree,Anadenanthera peregrina,(Benth.) Altschul
 Bauhinia,longifolia,Fabaceae,,BALO,F,tree,Bauhinia longifolia,(Bong.) Steud.
 Bauhinia,rufa,Fabaceae,,BARU,S,shrub,Bauhinia rufa,(Bong.) Steud.
 Bowdichia,virgilioides,Fabaceae,,BOVI,S,tree,Bowdichia virgilioides,Kunth
@@ -84,7 +84,7 @@ Senna,rugosa,Fabaceae,,SERU,S,shrub,Senna rugosa,
 Stryphnodendron,adstringens,Fabaceae,,STAD,S,tree,Stryphnodendron adstringens,(Mart.) Coville
 Stryphnodendron,rotundifolium,Fabaceae,,STRO,S,tree,Stryphnodendron rotundifolium,Mart.
 Sweetia,fruticosa,Fabaceae,,SWFR,F,tree,Sweetia fruticosa,
-Copaifera,langsdorffii,Fabaceae.,,COLA,G,tree,Copaifera langsdorffii,Desf.
+Copaifera,langsdorffii,Fabaceae,,COLA,G,tree,Copaifera langsdorffii,Desf.
 Lacistema,hasslerianum,Lacistemataceae,,LAHA,G,treelet,Lacistema hasslerianum,Chodat
 Aegiphila,verticillata,Lamiaceae,,AEVE,S,tree,Aegiphila verticillata,Vell.
 Vitex,megapotamica,Lamiaceae,,VIME,F,tree,Vitex megapotamica,
@@ -164,7 +164,7 @@ Guapira,graciliflora,Nyctaginaceae,,GUGR,F,tree,Guapira graciliflora,
 Guapira,hirsuta,Nyctaginaceae,,GUHI,F,tree,Guapira hirsuta,
 Guapira,opposita,Nyctaginaceae,,GUOP,G,tree,Guapira opposita,
 Ouratea,spectabilis,Ochnaceae,,OUSP,S,tree,Ouratea spectabilis,(Mart. ex Engl.) Engl.
-Pera,obovata,Peraceae,,PEOB,G,tree,Pera glabrata ,(Schott) Poepp. ex Baill.
+Pera,obovata,Peraceae,,PEOB,G,tree,Pera glabrata,(Schott) Poepp. ex Baill.
 Pinus,elliottii,Pinaceae,,PIEL,exo,tree,Pinus elliottii,
 Piper,mollicomum,Piperaceae,,PIMO,F,shrub,Piper mollicomum,
 Myrsine,coriacea,Primulaceae,subsp coriacea,RAFE,G,tree,Myrsine coriacea,(Sw.) R.Br. ex Roem. & Schult.
@@ -208,7 +208,7 @@ Solanum,lycocarpum,Solanaceae,,SOLY,S,shrub,Solanum lycocarpum,A.St.-Hil.
 Styrax,camporum,Styracaceae,,STCA,S,tree,Styrax camporum,Pohl
 Styrax,ferrugineus,Styracaceae,,STFE,S,tree,Styrax ferrugineus,Nees & Mart.
 Styrax,pohlii,Styracaceae,,STPO,F,tree,Styrax pohlii,A. DC.
-Symplocos,mosenii,Symplocaceae,,SYRE,G,tree,Symplocos mosenii,Casar.
+Symplocos,mosenii,Symplocaceae,,SYRE,G,tree,Symplocos reflexa,(Mart.) Casar.
 Symplocos,pubescens,Symplocaceae,,SYPU,S,treelet,Symplocos pubescens,Klotzsch ex Benth.
 Daphnopsis,fasciculata,Thymelaeaceae,,DAFA,G,tree,Daphnopsis fasciculata,(Meisn.) Nevling
 Daphnopsis,racemosa,Thymelaeaceae,,DARA,G,tree,Daphnopsis racemosa,Griseb.

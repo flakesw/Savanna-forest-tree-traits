@@ -7,11 +7,13 @@ library("lme4")
 library("phytools")
 library("ape")
 source("./S.PhyloMaker-master/R_codes for S.PhyloMaker") #phylogeny tools
+library("devtools")
 
 leaf <- read.csv(".\\raw data\\leaf_traits.csv", stringsAsFactors = FALSE)
 wood <- read.csv(".\\raw data\\twig_traits.csv", stringsAsFactors = FALSE)
 field <- read.csv(".\\raw data\\field_data.csv", stringsAsFactors = FALSE)
-sp_info <- read.csv(".\\raw data\\lista_spp_plantas_families_sf_09252019.csv", stringsAsFactors=FALSE)
+sp_info <- read.csv(".\\raw data\\lista_spp_plantas_families_sf_2020_04_08.csv", stringsAsFactors = FALSE)
+splink_class <- read.csv("./raw data/species_link_classification.csv", stringsAsFactors = FALSE)
 plot_data <- read.csv("./raw data/30_parcelas_arvores_2015_complet_out_2015_sf_edits.csv", stringsAsFactors = FALSE)
 charlight <- read.csv("./raw data/CharLight_final_102218.csv")
 frost <- read.csv("./raw data/FrostDamageAll.csv")
@@ -29,7 +31,6 @@ leaf_reduced$Leaf.thickness.3..mm. <- as.numeric(leaf_reduced$Leaf.thickness.3..
 # leaf_reduced[leaf_reduced$SLA..cm2.g.1. == 0, "SLA..cm2.g.1."] <- NA
 leaf_reduced$SLA..cm2.g.1. <- as.numeric(leaf_reduced$SLA..cm2.g.1.)
 
-
 wood_reduced <- wood[!(wood$Individual %in% c("Omit", "omit")), c("Individual", "Outer.diameter", "Twig.bark.thickness", "Relative.bark.thickness", "Density..g.mL.")]
 
 field_reduced <- field[!(field$Individual %in% c("Omit", "omit")), c("Individual", "X", "Code", "D30", "DBH", "Ht", "Lower.leaf", "Bark1", "Bark2", "Bark3", "Light")]
@@ -45,6 +46,11 @@ field_reduced$D30_eff <- vapply(strsplit(field_reduced$D30, split = ","),
                            1, FUN = function(x){return(sqrt(sum(((as.numeric(unlist(x)))^2), na.rm = TRUE)))})
 
 sp_info$Life.Form <- as.factor(tolower(sp_info$Life.Form))
+
+#add specieslink classification
+names(splink_class)[2] <- "New.name"
+sp_info <- join(sp_info, splink_class[, c(2, 6, 7, 8)], by = c("New.name"))
+write.csv(sp_info, "./raw data/sp_info_with_splink.csv")
 
 #is there a more elegant way to do this than joinjoinjoinjoin?
 clean_data <- join(join(join(join(field_reduced, leaf_reduced, by = c("Individual"), type = "full"),
@@ -201,9 +207,7 @@ plot_data_no_equals$DBH_eff <- sqrt(plot_data_no_equals$CSA_BH/pi)
 
 plot_data_no_equals$D30_eff <- sqrt(plot_data_no_equals$CSA_30/pi)
 
-plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(5,6,7,8)], by = c("Code"), type = "left")
-
-write.csv(plot_data_no_equals, paste0("./Clean data/plot_data", Sys.Date(), ".csv"))
+plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(5,7,8,10)], by = c("Code"), type = "left")
 
 #------------------------------------------------------------------------------
 #Doing some bark data manipulation
@@ -221,14 +225,17 @@ names(bark_table_2) <- names(bark_table)[1:3]
 bark_table <- rbind(bark_table, bark_table_2) #combine all bark measurements into one data frame
 bark_table$Code <- as.factor(bark_table$Code)
 
-bark_model_global  <- lmer(Mean.Bark.thickness ~  Code*log(max_d30) + (1|Code), data = bark_table)
+bark_model_global  <- lm(Mean.Bark.thickness ~  Code*log(max_d30), data = bark_table)
 
 saveRDS(bark_model_global, "./clean data/bark_model.RDS")
 
-bark_table_fg <- join(bark_table, clean_data[, c("Code", "FG", "Life.Form")], by = c("Code"))
+# 
+# bark_table_fg <- join(bark_table, clean_data[, c("Code", "FG", "Life.Form")], by = c("Code"))
+# 
+# bark_model_fg <- lm(Mean.Bark.thickness ~  FG*Life.Form*log(max_d30), data = bark_table_fg)
+# 
+# saveRDS(bark_model_global, "./clean data/bark_model_fg.RDS")
 
-bark_model_fg <- lm(Mean.Bark.thickness ~  FG*Life.Form*log(max_d30), data = bark_table_fg)
-saveRDS(bark_model_global, "./clean data/bark_model_fg.RDS")
 #-------------------------------------------------------------------------
 # Spruce up frost and light data
 #-------------------------------------------------------------------------
@@ -346,7 +353,7 @@ for(i in 1:length(unique(clean_data$Code))){
   
   
   #FG
-  clean_species$FG[i] <- as.character(data_select$FG[1])
+  clean_species$FG[i] <- as.character(data_select$classification66[1])
   
   #Light at 5cm
   #don't worry about the warnings -- it returns NAs at the end anyway like it should
@@ -388,52 +395,62 @@ write.csv(clean_species, paste0("./clean data/clean_species", Sys.Date(), ".csv"
 # Bring in phylogeny
 #------------------------------------------------------------------------------
 
-## Phylogenetic analysis
+#------------------------------------------------------------------------------
+# Tree using V.Phylomaker
 
+# devtools::install_github("jinyizju/V.PhyloMaker")
+library("V.PhyloMaker")
 
 #import species list and remove some duplicates
-spList_orig <- read.csv("./raw data/lista_spp_plantas_families_sf_09252019.csv")
-spList_orig[!(spList_orig$FG %in% c("S", "F", "G")), "FG"] <- "G"
-spList_orig$FG <- droplevels(spList_orig$FG)
+spList_orig <- read.csv("./raw data/lista_spp_plantas_families_sf_2020_04_08.csv", stringsAsFactors = FALSE)
 
+spList_orig <- spList_orig[spList_orig$Code %in% clean_species$Code, ]
 #make species list in proper format
-spList <- data.frame(species = paste(spList_orig$Genus, spList_orig$Species, sep = " "),
-                     genus = spList_orig$Genus,
+
+spList_orig$orig_name_in_tips <- paste(spList_orig$Genus, spList_orig$Species, sep = "_") %in% tips.info$species
+spList_orig$new_name_in_tips <- sub(" ", "_", spList_orig$New.name) %in% tips.info$species
+spList_orig$use_new_name <- !(spList_orig$orig_name_in_tips) & (spList_orig$new_name_in_tips)
+spList_orig$use_old_name <- (spList_orig$orig_name_in_tips) & !(spList_orig$new_name_in_tips)
+spList_orig$not_in_tips <- !(spList_orig$orig_name_in_tips) & !(spList_orig$new_name_in_tips)
+spList_orig$Genus_in_phy <- spList_orig$Genus %in% nodes.info.1$genus
+
+spList_orig$new_genus <- unlist(lapply(spList_orig$New.name, FUN = function(x){strsplit(x, split = " ")[[1]][1]}))
+spList_orig$new_species <- unlist(lapply(spList_orig$New.name, FUN = function(x){strsplit(x, split = " ")[[1]][2]}))
+
+spList <- data.frame(species = ifelse(spList_orig$use_old_name, paste(spList_orig$Genus, spList_orig$Species, sep = " "), spList_orig$New.name),
+                     genus = ifelse(spList_orig$use_new_name, spList_orig$Genus, spList_orig$new_genus),
                      family = spList_orig$Family,
+                     species.relative = spList_orig$species.relative,
+                     genus.relative = spList_orig$genus.relative, 
                      stringsAsFactors = FALSE)
 
+# generate the phylogeny 
+
+rel <- bind.relative(sp.list=spList, tree=GBOTB.extended, nodes=nodes.info.1)
+tree_rel <- phylo.maker(sp.list=rel$species.list, tree=rel$phylo,
+                      nodes=rel$nodes.info, scenarios="S3")
+
+tips_rename <- spList_orig[spList_orig$use_old_name == TRUE, ]
+tips_rename$sp_name <- paste(tips_rename$Genus, tips_rename$Species, sep = "_")
+
+tips_rename[match(tree_rel$tip.label, tips_rename$sp_name), ]
 
 
-phylo<-read.tree("./S.PhyloMaker-master/PhytoPhylo")      # read in the megaphylogeny.    
-nodes<-read.csv("./S.PhyloMaker-master/nodes",header=T, sep = "\t")     # read in the nodes information of the megaphylogeny.    
-# phylo <- drop.tip(phylo, 8791) #drop Ocotea pulchella to fix the myrtaceae
-# phylo <- drop.tip(phylo, 13609) #drop cupania vernalis to fix cupania/matayba
-# phylo <- drop.tip(phylo, c())#drop myrcia tomentosa and multiflora
+write.tree(tree_rel$scenario.3, "./clean_data/phylogeny_v")
 
 
 
-# tree_test <- drop.tip(phylo, phylo$tip.label[!(phylo$tip.label %in% sub(" ", "_", spList$species))])
-
-result<-S.PhyloMaker(spList=spList, tree=phylo, nodes=nodes)      # run the function S.PhyloMaker.    
-
-# plot(result$Scenario.3,cex=1.1,main="Scenario Three")
-
-tree <- result$Scenario.3
-
-#check on myrcias, pouteria ramiflora, 
-unique(clean_data$Code)[!(unique(clean_data$Code) %in% spList_orig$Code)]
-
-splist_test <- sub(" ", "_", spList$species)
-# splist_test[!(splist_test %in% phylo$tip.label)]
-phylo$tip.label[grep("Leptolobium", phylo$tip.label)]
-
-# spList_orig[spList_orig$Code %in% clean_species$Code, "Authority"]
-
-# str(tree)
 # 
-# saveRDS(tree, file = "phylogeny.RDS")
-
-#relabel tips with code instead of species name
-tree$tip.label <- as.character(spList_orig[, "Code"][match(tree$tip.label, sub(" ", "_", spList$species))])
-
-saveRDS(tree, file = "phylogeny_code.RDS")
+# pdf(file = "./plots/phylogeny_tests_v_rel.pdf",
+#     width = 7,
+#     height = 7,
+#     pointsize = 8)
+# plot(tree_rel$scenario.3,cex=1.1,main="v.Phylomaker Tree", type = "fan")
+# dev.off()
+# 
+# pdf(file = "./plots/phylogeny_tests_v_no_rel.pdf",
+#     width = 7,
+#     height = 7,
+#     pointsize = 8)
+# plot(tree_no_rel$scenario.3,cex=1.1,main="v.Phylomaker Tree", type = "fan")
+# dev.off()
