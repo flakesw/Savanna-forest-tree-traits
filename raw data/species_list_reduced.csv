@@ -1,0 +1,117 @@
+"","Genus","Species","Family","Code","FG","Life.Form","New.name","NewCode","Authority","species.relative","genus.relative"
+"1","Lithraea","molleoides","Anacardiaceae","LIMO","F","tree","Lithraea molleoides","LIMO","(Vell.) Engl.","",NA
+"2","Tapirira","guianensis","Anacardiaceae","TAGU","G","tree","Tapirira guianensis","TAGU","Aubl.","",NA
+"3","Annona","cacans","Annonaceae","ANCA","F","tree","Annona cacans","ANCA","Warm.","",NA
+"4","Annona","coriacea","Annonaceae","ANCO","S","tree","Annona coriacea","ANCO","Mart.","",NA
+"5","Annona","crassiflora","Annonaceae","ANCR","S","tree","Annona crassiflora","ANCR","Mart.","",NA
+"6","Annona","dioica","Annonaceae","ANDI","S","shrub","Annona dioica","ANDI","A. St.-Hil.","",NA
+"8","Duguetia","furfuracea","Annonaceae","DUFU","S","shrub","Duguetia furfuracea","DUFU","(A.St.-Hil.) Saff.","",NA
+"9","Guatteria","nigrescens","Annonaceae","GUNI","F","tree","Guatteria nigrescens","GUNI","Mart.","",NA
+"11","Xylopia","aromatica","Annonaceae","XYAR","G","tree","Xylopia aromatica","XYAR","","",NA
+"12","Aspidosperma","tomentosum","Apocynaceae","ASTO","S","tree","Aspidosperma tomentosum","ASTO","Mart. & Zucc.","",NA
+"14","Tabernaemontana","catharinensis","Apocynaceae","TACA","G","tree","Tabernaemontana catharinensis","TACA","A.DC.","",NA
+"16","Schefflera","vinosa","Araliaceae","SCVI","S","treelet","Schefflera vinosa","SCVI","(Cham. & Schltdl.) Frodin & Fiasch","",NA
+"17","Baccharis","dracunculifolia","Asteraceae","BADR","G","treelet","Baccharis dracunculifolia","BADR","DC.","",NA
+"22","Gochnatia","barrosii","Asteraceae","GOBA","S","shrub","Moquiniastrum barrosoae","MOBA","(Cabrera) G. Sancho","",NA
+"23","Gochnatia","polymorpha","Asteraceae","GOPO","G","tree","Moquiniastrum polymorphum","MOPO","(Less.) G. Sancho","",NA
+"27","Piptocarpha","axillaris","Asteraceae","PIAX","F","tree","Piptocarpha axillaris","PIAX"," (Less.) Baker","",NA
+"28","Piptocarpha","rotundifolia","Asteraceae","PIRO","S","treelet","Piptocarpha rotundifolia","PIRO","(Less.) Baker","",NA
+"35","Jacaranda","caroba","Bignoniaceae","JACA","S","shrub","Jacaranda caroba","JACA","(Vell.) DC.","",NA
+"40","Tabebuia","ochracea","Bignoniaceae","TAOC","S","tree","Handroanthus ochraceus","HAOC","(Cham.) Mattos","",NA
+"41","Zeyheria","montana","Bignoniaceae","ZEMO","S","shrub","Zeyheria montana","ZEMO","Mart.","",NA
+"42","Zeyheria","tuberculosa","Bignoniaceae","ZETU","G","tree","Zeyheria tuberculosa","ZETU","(Vell.) Bureau ex Verl.","",NA
+"43","Tabebuia","aurea","Bignoniaceae","TAAU","S","tree","Tabebuia aurea","TAAU","(Silva Manso) Benth. & Hook.f. ex S.Moore","",NA
+"46","Protium","heptaphyllum","Burseraceae","PRHE","G","tree","Protium heptaphyllum","PRHE","(Aubl.) Marchand","",NA
+"47","Kielmeyera","coriacea","Calophyllaceae","KICO","S","tree","Kielmeyera coriacea","KICO","Mart. & Zucc.","",NA
+"48","Caryocar","brasiliense","Caryocaraceae","CABR","S","tree","Caryocar brasiliense","CABR","Cambess.","",NA
+"50","Plenckia","populnea","Celastraceae","PLPO","S","tree","Plenckia populnea","PLPO","Reissek","",NA
+"51","Terminalia","glabrescens","Combretaceae","TEGL","G","tree","Terminalia glabrescens","TEGL","Mart.","",NA
+"52","Connarus","suberosus","Connaraceae","COSU","S","treelet","Connarus suberosus","COSU","Planch.","",NA
+"54","Davilla","elliptica","Dilleniaceae","DAEL","S","shrub","Davilla elliptica","DAEL","A.St.-Hil.","",NA
+"55","Diospyros","burchelli","Ebenaceae","DIBU","S","tree","Diospyros hispida","DIBU","A. DC.","",NA
+"56","Erythroxylum","cuneifolium","Erythroxylaceae","ERCU","S","shrub","Erythroxylum cuneifolium","ERCU","(Mart.) O.E.Schulz","",NA
+"57","Erythroxylum","deciduum","Erythroxylaceae","ERDE","G","tree","Erythroxylum deciduum","ERDE","A.St.-Hil.","",NA
+"59","Erythroxylum","suberosum","Erythroxylaceae","ERSU","S","treelet","Erythroxylum suberosum","ERSU","A.St.-Hil.","",NA
+"60","Erythroxylum","tortuosum","Erythroxylaceae","ERTO","S","treelet","Erythroxylum tortuosum","ERTO","","",NA
+"61","Maprounea","guianensis","Euphorbiaceae","MAGU","G","tree","Maprounea guianensis","MAGU","Aubl.","",NA
+"63","Croton","floribundus","Euphorbiaceae","CRFL","F","tree","Croton floribundus","CRFL","Spreng.","",NA
+"64","Anadenanthera","falcata","Fabaceae","ANFA","G","tree","Anadenanthera peregrina","ANFA","(Benth.) Altschul","",NA
+"65","Bauhinia","longifolia","Fabaceae","BALO","F","tree","Bauhinia longifolia","BALO","(Bong.) Steud.","Bauhinia rufa",NA
+"66","Bauhinia","rufa","Fabaceae","BARU","S","shrub","Bauhinia rufa","BARU","(Bong.) Steud.","",NA
+"67","Bowdichia","virgilioides","Fabaceae","BOVI","S","tree","Bowdichia virgilioides","BOVI","Kunth","",NA
+"70","Dimorphandra","mollis","Fabaceae","DIMO","S","tree","Dimorphandra mollis","DIMO","Benth.","",NA
+"72","Leptolobium","elegans","Fabaceae","LEEL","S","tree","Leptolobium elegans","LEEL","Vogel","",NA
+"73","Machaerium","acutifolium","Fabaceae","MAAC","S","tree","Machaerium acutifolium","MAAC","Vogel","",NA
+"74","Machaerium","brasiliense","Fabaceae","MABR","G","tree","Machaerium brasiliense","MABR","Vogel","",NA
+"79","Plathymenia","reticulata","Fabaceae","PLRE","S","tree","Plathymenia reticulata","PLRE","Benth.","",NA
+"80","Platypodium","elegans","Fabaceae","PLEL","F","tree","Platypodium elegans","PLEL","Vogel","",NA
+"83","Stryphnodendron","adstringens","Fabaceae","STAD","S","tree","Stryphnodendron adstringens","STAD","(Mart.) Coville","",NA
+"84","Stryphnodendron","rotundifolium","Fabaceae","STRO","S","tree","Stryphnodendron rotundifolium","STRO","Mart.","",NA
+"86","Copaifera","langsdorffii","Fabaceae","COLA","G","tree","Copaifera langsdorffii","COLA","Desf.","",NA
+"87","Lacistema","hasslerianum","Lacistemataceae","LAHA","G","treelet","Lacistema hasslerianum","LAHA","Chodat","",NA
+"88","Aegiphila","verticillata","Lamiaceae","AEVE","S","tree","Aegiphila verticillata","AEVE","Vell.","",NA
+"90","Aegiphila","sellowiana","Lamiaceae","AESE","F","tree","Aegiphila sellowiana","AESE","Cham.","",NA
+"91","Nectandra","cuspidata","Lauraceae","NECU","F","tree","Nectandra cuspidata","NECU","Nees","",NA
+"93","Nectandra","oppositifolia","Lauraceae","NEOP","F","tree","Nectandra oppositifolia","NEOP","Nees","",NA
+"94","Ocotea","corymbosa","Lauraceae","OCCO","G","tree","Ocotea corymbosa","OCCO","(Meisn.) Mez","",NA
+"96","Ocotea","minarum","Lauraceae","OCMI","G","tree","Ocotea minarum","OCMI","(Nees & Mart.) Mez","",NA
+"98","Ocotea","pulchella","Lauraceae","OCPU","G","tree","Ocotea pulchella","OCPU","(Nees & Mart.) Mez","",NA
+"100","Ocotea","velloziana","Lauraceae","OCVE","F","tree","Ocotea velloziana","OCVE","(Meisn.) Mez","",NA
+"102","Persea","willdenovii","Lauraceae","PEWI","F","tree","Persea willdenovii","PEWI","Kosterm.","",NA
+"108","Byrsonima","basiloba","Malpighiaceae","BYBA","S","tree","Byrsonima basiloba","BYBA","A.Juss.","",NA
+"109","Byrsonima","coccolobifolia","Malpighiaceae","BYCO","S","tree","Byrsonima coccolobifolia","BYCO","Kunth","",NA
+"111","Byrsonima","laxiflora","Malpighiaceae","BYLA","G","tree","Byrsonima laxiflora","BYLA","Griseb.","",NA
+"112","Eriotheca","gracilipes","Malvaceae","ERGR","S","tree","Eriotheca gracilipes","ERGR","(K.Schum.) A.Robyns","",NA
+"114","Luehea","candicans","Malvaceae","LUCA","G","tree","Luehea candicans","LUCA","Mart.","",NA
+"115","Luehea","grandiflora","Malvaceae","LUGR","G","tree","Luehea grandiflora","LUGR","Mart.","",NA
+"117","Miconia","albicans","Melastomataceae","MIAL","S","treelet","Miconia albicans","MIAL","(Sw.) Steud","",NA
+"119","Miconia","ligustroides","Melastomataceae","MILI","S","treelet","Miconia ligustroides","MILI","(DC.) Naudin","",NA
+"121","Miconia","sellowiana","Melastomataceae","MISE","G","tree","Miconia sellowiana","MISE","Naudin","",NA
+"133","Calyptranthes","lucida","Myrtaceae","CALU","F","tree","Calyptranthes lucida","CALU","Mart. ex DC.","",NA
+"134","Campomanesia","adamantium","Myrtaceae","CAAD","S","shrub","Campomanesia adamantium","CAAD","(Cambess.) O.Berg","",NA
+"136","Campomanesia","guazumifolia","Myrtaceae","CAGU","F","tree","Campomanesia guazumifolia","CAGU","(Cambess.) O.Berg","",NA
+"142","Eugenia","myrcianthes","Myrtaceae","EUMY","G","tree","Eugenia myrcianthes","EUMY","Nied.","",NA
+"143","Eugenia","punicifolia","Myrtaceae","EUPU","S","treelet","Eugenia punicifolia","EUPU","","",NA
+"149","Myrcia","splendens","Myrtaceae","MYFA","G","tree","Myrcia splendens","MYRCSPL","(Sw.) DC.","",NA
+"151","Myrcia","lingua","Myrtaceae","MYLI","S","tree","Myrcia guianensis","MYRCGUI","(Aubl.) DC.","",NA
+"152","Myrcia","multiflora","Myrtaceae","MYMU","G","tree","Myrcia multiflora","MYRSMUL","(Lam.) DC.","",NA
+"153","Myrcia","tomentosa","Myrtaceae","MYTO","S","tree","Myrcia tomentosa","MYRCTOM","(Aubl.) DC.","",NA
+"154","Myrcia","venulosa","Myrtaceae","MYVE","S","tree","Myrcia venulosa","MYRCVEN","DC.","",NA
+"165","Ouratea","spectabilis","Ochnaceae","OUSP","S","tree","Ouratea spectabilis","OUSP","(Mart. ex Engl.) Engl.","",NA
+"166","Pera","obovata","Peraceae","PEOB","G","tree","Pera glabrata","PEGL","(Schott) Poepp. ex Baill.","",NA
+"169","Rapanea","ferruginea","Primulaceae","RAFE","G","tree","Myrsine coriacea","MYRSCOR","(Sw.) R.Br. ex Roem. & Schult.","",NA
+"170","Rapanea","guianensis","Primulaceae","RAGU","S","tree","Myrsine guianensis","MYRSGUI","(Aubl.) Kuntze","",NA
+"171","Rapanea","umbellata","Primulaceae","RAUM","G","tree","Myrsine umbellata","MYRSUMB","Mart.","",NA
+"172","Rapanea","lancifolia","Primulaceae","RALA","F","tree","Myrsine lancifolia","MYRSLAN","Mart.","",NA
+"173","Roupala","montana","Proteaceae","ROMO","S","tree","Roupala montana","ROMO","Aubl.","",NA
+"175","Prunus","myrtifolia","Rosaceae","PRMY","G","tree","Prunus myrtifolia","PRMY","(L.) Urb.","",NA
+"176","Alibertia","edulis","Rubiaceae","ALED","F","Treelet","Alibertia edulis","ALED","(Rich.) A.Rich. ex DC.","",NA
+"177","Amaioua","intermedia","Rubiaceae","AMIN","G","tree","Amaioua intermedia","AMIN","Mart. ex Schult. & Schult.f.","",NA
+"181","Faramea","montevidensis","Rubiaceae","FAMO","G","tree","Faramea montevidensis","FAMO","(Cham. & Schltdl.) DC.","",NA
+"187","Tocoyena","formosa","Rubiaceae","TOFO","S","shrub","Tocoyena formosa","TOFO","(Cham. & Schltdl.) K.Schum.","",NA
+"188","Guettarda","viburnoides","Rubiaceae","GUVI","F","tree","Guettarda viburnoides","GUVI","","",NA
+"191","Helietta","apiculata","Rutaceae","HEAP","F","tree","Helietta apiculata","HEAP","Benth.","",NA
+"192","Zanthoxylum","rhoifolium","Rutaceae","ZARH","G","tree","Zanthoxylum rhoifolium","ZARH","Lam.","",NA
+"196","Casearia","sylvestris","Salicaceae","CASY","F","tree","Casearia sylvestris","CASY","Sw.","",NA
+"197","Cupania","tenuivalvis","Sapindaceae","CUTE","G","treelet","Cupania tenuivalvis","CUTE","Radlk.","",NA
+"198","Cupania","vernalis","Sapindaceae","CUVE","F","tree","Cupania vernalis","CUVE","Cambess.","",NA
+"199","Matayba","elaeagnoides","Sapindaceae","MAEL","G","tree","Matayba elaeagnoides","MAEL","Radlk.","",NA
+"200","Chrysophyllum","marginatum","Sapotaceae","CHMA","G","tree","Chrysophyllum marginatum","CHMA","(Hook. & Arn.) Radlk.","",NA
+"201","Pouteria","ramiflora","Sapotaceae","PORA","G","tree","Pouteria ramiflora","PORA","(Mart.) Radlk.","",NA
+"203","Pouteria","torta","Sapotaceae","POTO","S","tree","Pouteria torta","POTO","(Mart.) Radlk.","",NA
+"204","Siparuna","guianensis","Siparunaceae","SIGU","G","tree","Siparuna guianensis","SIGU","Aubl.","",NA
+"205","Cestrum","mariquitense","Solanaceae","CESE","F","shrub","Cestrum mariquitense","CEMA","Kunth","",NA
+"206","Solanum","lycocarpum","Solanaceae","SOLY","S","shrub","Solanum lycocarpum","SOLY","A.St.-Hil.","",NA
+"207","Styrax","camporum","Styracaceae","STCA","S","tree","Styrax camporum","STCA","Pohl","",NA
+"208","Styrax","ferrugineus","Styracaceae","STFE","S","tree","Styrax ferrugineus","STFE","Nees & Mart.","",NA
+"209","Styrax","pohlii","Styracaceae","STPO","F","tree","Styrax pohlii","STPO","A. DC.","",NA
+"210","Symplocos","mosenii","Symplocaceae","SYRE","G","tree","Symplocos reflexa","SYRE","(Mart.) Casar.","",NA
+"211","Symplocos","pubescens","Symplocaceae","SYPU","S","treelet","Symplocos pubescens","SYPU","Klotzsch ex Benth.","",NA
+"212","Daphnopsis","fasciculata","Thymelaeaceae","DAFA","G","tree","Daphnopsis fasciculata","DAFA","(Meisn.) Nevling","",NA
+"213","Daphnopsis","racemosa","Thymelaeaceae","DARA","G","tree","Daphnopsis racemosa","DARA","Griseb.","",NA
+"214","Cecropia","pachystachya","Urticaceae","CEPA","G","tree","Cecropia pachystachya","CEPA","","",NA
+"216","Lippia","salviifolia","Verbenaceae","LISA","S","shrub","Lippia origanoides","LIOR","Cham.","",NA
+"217","Qualea","cordata","Vochysiaceae","QUCO","S","tree","Qualea cordata","QUCO","","",NA
+"218","Qualea","grandiflora","Vochysiaceae","QUGR","S","tree","Qualea grandiflora","QUGR","","",NA
+"219","Qualea","multiflora","Vochysiaceae","QUMU","S","tree","Qualea multiflora","QUMU","","",NA
+"220","Vochysia","tucanorum","Vochysiaceae","VOTU","G","tree","Vochysia tucanorum","VOTU","","",NA

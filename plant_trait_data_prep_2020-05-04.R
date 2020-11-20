@@ -52,9 +52,12 @@ names(splink_class)[2] <- "New.name"
 sp_info <- join(sp_info, splink_class[, c(2, 6, 7, 8)], by = c("New.name"))
 write.csv(sp_info, "./raw data/sp_info_with_splink.csv")
 
+#compare splink and abreu classifications
+
+
 #is there a more elegant way to do this than joinjoinjoinjoin?
 clean_data <- join(join(join(join(field_reduced, leaf_reduced, by = c("Individual"), type = "full"),
-                   wood_reduced, by = c("Individual"), type = "left"),
+                   wood_reduced, by = c("Individual"), type = "full"),
                    sp_info, by = c("Code"), type = "left"), 
                    max_heights[, c(2,3)], by = c("Code"), type = "left")
   
@@ -77,7 +80,7 @@ for(i in 1:nrow(clean_data)){ #why is this all in a for loop?
 
 clean_data$Ht <- clean_data$Ht/100
 
-setdiff(sp_info$Code, clean_data$Code)
+# setdiff(sp_info$Code, clean_data$Code)
 
 #Write data
 write.csv(clean_data, ".\\clean data\\clean_data.csv")
@@ -119,10 +122,8 @@ for(i in 1:nrow(plot_data_no_equals)){
   }
 }
 
-
 #convert species name to a 4-letter code
 plot_data_no_equals$Code <- as.character(sapply(plot_data_no_equals$Species, FUN = function(x){toupper(paste(substr(unlist(strsplit(x , split = " ")), 1, 2), collapse = ""))}))
-
 
 #Clean up codes and some other issues
 plot_data_no_equals[plot_data_no_equals$Species == "Campomanesia guaviroba", "Code"] <- "CAGU2"
@@ -207,12 +208,11 @@ plot_data_no_equals$DBH_eff <- sqrt(plot_data_no_equals$CSA_BH/pi)
 
 plot_data_no_equals$D30_eff <- sqrt(plot_data_no_equals$CSA_30/pi)
 
-plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(5,7,8,10)], by = c("Code"), type = "left")
+plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(4,5,6,7,8,15)], by = c("Code"), type = "left")
 
 #------------------------------------------------------------------------------
 #Doing some bark data manipulation
 #------------------------------------------------------------------------------
-
 ## Get relative bark thickness for stems
 
 bark_table <- clean_data[, c("Code", "max_d30", "Mean.Bark.thickness")]
@@ -226,16 +226,9 @@ bark_table <- rbind(bark_table, bark_table_2) #combine all bark measurements int
 bark_table$Code <- as.factor(bark_table$Code)
 
 bark_model_global  <- lm(Mean.Bark.thickness ~  Code*log(max_d30), data = bark_table)
-
+bark_model_fg <- lm(Mean.Bark.thickness ~  Code, data = bark_table)
 saveRDS(bark_model_global, "./clean data/bark_model.RDS")
-
-# 
-# bark_table_fg <- join(bark_table, clean_data[, c("Code", "FG", "Life.Form")], by = c("Code"))
-# 
-# bark_model_fg <- lm(Mean.Bark.thickness ~  FG*Life.Form*log(max_d30), data = bark_table_fg)
-# 
-# saveRDS(bark_model_global, "./clean data/bark_model_fg.RDS")
-
+saveRDS(bark_model_fg, "./clean data/bark_model_fg.RDS")
 #-------------------------------------------------------------------------
 # Spruce up frost and light data
 #-------------------------------------------------------------------------
@@ -281,6 +274,10 @@ write.csv(plot_data_no_equals, paste0("./Clean data/plot_data", Sys.Date(), ".cs
 #initialize species-level dataframe
 clean_species <- data.frame(Code = unique(clean_data$Code),
                             N = numeric(length(unique(clean_data$Code))),
+                            N_leaf = numeric(length(unique(clean_data$Code))),
+                            N_wood = numeric(length(unique(clean_data$Code))),
+                            N_bark = numeric(length(unique(clean_data$Code))),
+                            N_height = numeric(length(unique(clean_data$Code))),
                             Leaf_size = numeric(length(unique(clean_data$Code))),
                             Total_leaf_size = numeric(length(unique(clean_data$Code))),
                             Leaf_thickness = numeric(length(unique(clean_data$Code))),
@@ -303,6 +300,12 @@ for(i in 1:length(unique(clean_data$Code))){
   data_select <- clean_data[clean_data$Code == code_select, ]
   
   clean_species$N[i] <- nrow(data_select)#length(which(complete.cases(data_select)))
+  clean_species$N_wood[i] <- nrow(data_select[!is.na(data_select$Density..g.mL.), ])
+  clean_species$N_leaf[i] <- nrow(data_select[!is.na(data_select$SLA..cm2.g.1.), ])
+  clean_species$N_bark[i] <- nrow(data_select[!is.na(data_select$Mean.Bark.thickness), ])
+  clean_species$N_height[i] <- nrow(plot_data_no_equals[plot_data_no_equals$Code == code_select & !is.na(plot_data_no_equals$H), ]) + 
+                                nrow(data_select[!is.na(data_select$Ht), ])
+  
   if(sum(!is.na(data_select$Leaflet.or.leaf.size..mm2.))>=3){
     clean_species$Leaf_size[i] <- mean(data_select$Leaflet.or.leaf.size..mm2., na.rm = TRUE)}
   
@@ -362,8 +365,6 @@ for(i in 1:length(unique(clean_data$Code))){
   light_subset <- rbind(light_subset, light_select)
   light_subset <- light_subset[light_subset$D30_eff > 0 & !(is.na(light_subset$D30_eff)) & !(is.na(light_subset$Light.code)), ]
   
-  # print(paste(i, ": ", nrow(light_subset)))
-  
   if(nrow(light_subset) >= 5 &
      min(light_subset$D30_eff, na.rm = TRUE) < 6 &
      max(light_subset$D30_eff, na.rm = TRUE) >4){
@@ -377,18 +378,25 @@ for(i in 1:length(unique(clean_data$Code))){
   
   clean_species$Max_height[i] <- as.numeric(data_select$Max.height[1])
   
-  
 }
+
+clean_species_sample_size <- clean_species
+clean_species_sample_size <- join(clean_species_sample_size, sp_info, by = c("Code"))
+write.csv(clean_species_sample_size, "./clean data/clean_species_with_sample_size.csv")
+
+
+clean_species <- clean_species[, -c(3:6)]
+
+#sample size per trait? 
+N_spp <- apply(clean_species, c(2), FUN = function(x){sum(!is.na(x))})
+N_ind <- apply(clean_data, c(2), FUN = function(x){sum(!is.na(x))})
+
 
 #replace zeroes with NAs
 clean_species[, -c(1,2,14,15)] <- apply(clean_species[, -c(1,2,14,15)], c(1,2), FUN = function(x){ifelse(x == 0, NA, x)})
 
 clean_species[, -c(1,2,14,15)] <- apply(clean_species[, -c(1,2,14,15)], c(1,2), FUN = function(x){ifelse(x<0, NA, x)})
 
-#sample size per trait? 
-N_spp <- apply(clean_species, c(2), FUN = function(x){sum(!is.na(x))})
-N_ind <- apply(clean_data, c(2), FUN = function(x){sum(!is.na(x))})
-  
 write.csv(clean_species, paste0("./clean data/clean_species", Sys.Date(), ".csv"))
 
 #------------------------------------------------------------------------------
@@ -407,6 +415,7 @@ spList_orig <- read.csv("./raw data/lista_spp_plantas_families_sf_2020_04_08.csv
 #remove all the other species
 spList_orig <- spList_orig[spList_orig$Code %in% clean_species$Code, ]
 
+
 # split up the binomial
 spList_orig$new_genus <- unlist(lapply(spList_orig$New.name, FUN = function(x){strsplit(x, split = " ")[[1]][1]}))
 spList_orig$new_species <- unlist(lapply(spList_orig$New.name, FUN = function(x){strsplit(x, split = " ")[[1]][2]}))
@@ -421,7 +430,11 @@ spList <- data.frame(species = spList_orig$New.name,
 
 
 #Update one genus that has old name in the V.Phylomaker
-nodes.info.1[nodes.info.1$genus == "Gochnatia", ]$genus <- "Moquinastrum"
+nodes.info.1[nodes.info.1$genus == "Gochnatia", ]$genus <- "Moquiniastrum"
+
+#how many genera and species are in the  megaphylogeny?
+# sum(spList$genus %in% nodes.info.1$genus)
+# sum(gsub(" ", "_", spList$species) %in% GBOTB.extended$tip.label)
 
 # generate the phylogeny 
 rel <- bind.relative(sp.list=spList, tree=GBOTB.extended, nodes=nodes.info.1)
@@ -429,28 +442,4 @@ tree_rel <- phylo.maker(sp.list=rel$species.list, tree=rel$phylo,
                       nodes=rel$nodes.info, scenarios="S3")
 
 
-
-tips_rename <- spList_orig[spList_orig$use_old_name == TRUE, ]
-tips_rename$sp_name <- paste(tips_rename$Genus, tips_rename$Species, sep = "_")
-
-tips_rename[match(tree_rel$tip.label, tips_rename$sp_name), ]
-
-
 write.tree(tree_rel$scenario.3, "./clean data/phylogeny_v")
-
-
-
-# 
-# pdf(file = "./plots/phylogeny_tests_v_rel.pdf",
-#     width = 7,
-#     height = 7,
-#     pointsize = 8)
-# plot(tree_rel$scenario.3,cex=1.1,main="v.Phylomaker Tree", type = "fan")
-# dev.off()
-# 
-# pdf(file = "./plots/phylogeny_tests_v_no_rel.pdf",
-#     width = 7,
-#     height = 7,
-#     pointsize = 8)
-# plot(tree_no_rel$scenario.3,cex=1.1,main="v.Phylomaker Tree", type = "fan")
-# dev.off()

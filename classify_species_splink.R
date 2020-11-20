@@ -1,14 +1,19 @@
 library(plyr)
-library(rvest)
-library(dplyr)
-library(curl)
-library(V8)
+library(flora)
+
 
 ##Classify species from Specieslink data
 splink_results <- list.files(path = "./raw data/SaoPaulo_spLink_data", pattern = "\\.txt$", full.names = TRUE)
 splink_data <- ldply(splink_results, .fun = function(x){
                           read.table(x, quote = "", header = TRUE, 
                           sep = "\t", encoding = "UTF-8", dec = ".", fill = TRUE)})
+sp_info <- read.csv(".\\raw data\\lista_spp_plantas_families_sf_2020_04_08.csv", stringsAsFactors = FALSE)
+
+
+# check to make sure names are up to date and spelled right. 
+# I revised species list to match REFLORA on 2020-06-05. 
+# flora_names <- get.taxa(sp_info$New.name)
+# flora_names[!(flora_names$search.str %in% sp_info$New.name), ]
 
 
 #reformat data to lump subspecies and clean up errors
@@ -21,11 +26,10 @@ splink_data$Species_name <- paste(splink_data$genus, splink_data$species_epi, se
 
 sp_count <- table(splink_data$Species_name)
 
-#remove species with low counts, which are all due to misspellings or unclear ID
+#remove species with low counts, to remove misspellings
 splink_data <- splink_data[splink_data$Species_name %in% names(sp_count[(sp_count > 3)]), ]
 
 #do some manual proofing :(
-splink_data <- splink_data[-grep("cf", splink_data$Species_name), ]
 
 splink_data[splink_data$Species_name == "Cybistax antisyphillitica", "Species_name"] <- "Cybistax antisyphilitica"
 splink_data[splink_data$Species_name == "Copaifera langsdorfii", "Species_name"] <- "Copaifera langsdorffii"
@@ -35,139 +39,21 @@ splink_data[splink_data$Species_name == "Myrsine coriaceae", "Species_name"] <- 
 splink_data[splink_data$Species_name == "Chromolaena maximiliani", "Species_name"] <- "Chromolaena maximilianii"
 splink_data[splink_data$Species_name == "Pinus elliotti", "Species_name"] <- "Pinus elliottii"
 
+# replace species names that aren't in the new name list with their new names. This is to correct for entries
+# still using the old name
+splink_data[!(splink_data$Species_name %in% sp_info$New.name), "Species_name"] <- 
+  sp_info[match(splink_data[!(splink_data$Species_name %in% sp_info$New.name), "Species_name"], sp_info$Old.name), "New.name"]
+
+min(table(splink_data$Species_name))
+max(table(splink_data$Species_name))
+
 
 #words to search for for each habitat type
 savanna_words <- c("campo", "cerrado", "savanna", "savannah", "grassland", "campis", "campina")
 s_unlisted <- paste(unlist(savanna_words), collapse = "|")
-forest_words <- c("mata", "floresta", "forest", "cerradao", "cerradão")
+forest_words <- c("mata", "floresta", "forest", "cerradao", "cerradão", "bosque")
 f_unlisted <- paste(unlist(forest_words), collapse = "|")
 
-#------------------------------------------------------------------------------
-# #follow links and scrape html from links to other herbaria
-# 
-# 
-# #todo: extract URLs from specieslink data
-# #transform URLs into proper form for smithsonian 
-# #finish XML extraction from smithonian
-# #merge data back into splink dataframe
-# 
-# #if link is from smithsonian
-# 
-# 
-# add <- "http://n2t.net/ark:/65665/3e6b15c49-86e0-41bd-b947-3025e8590b55"
-# add2 <- "https://collections.nmnh.si.edu/search/botany/?ark=ark:/65665/3e6b15c4986e041bdb9473025e8590b55"
-# suffix <- gsub("-", "", url_parse(add)$path)
-# add3 <- url(paste0("https://collections.nmnh.si.edu/search/botany/?ark=", suffix))
-# link <- read_html(add3)
-# # 
-# # link2 <- read_html(url(add2))
-# # link1 <- read_html(url(add))
-# # 
-# # node1 <- link1 %>% html_nodes('body')
-# # html_text(node1)
-# 
-# # -----------------------------------------------------------------------------
-# #htmlunit method -- doesn't work
-# # library(htmlunit)
-# # library(rvest)
-# # library(purrr)
-# # library(tibble)
-# 
-# # library(rvest)
-# 
-# # js_pg <- hu_read_html("https://collections.nmnh.si.edu/search/botany/?ark=ark:/65665/3e6b15c4986e041bdb9473025e8590b55",
-# #                       emulate = "ie", js_delay = 10, ignore_ssl_errors = FALSE)
-# # 
-# # desc_nodes <- xml_find_all(js_pg, "//tr") %>% html_children()
-# # grep("Locality", html_text(js_pg))
-# 
-# #------------------------------------------------------------------------------
-# # # try with splashr
-# # install.packages("splashr")
-# # library("splashr")
-# # library("stevedore")
-# # 
-# # install_splash()
-# # splash_container <- start_splash()
-# 
-# # library("splashr")
-# # docker <- stevedore::docker_client()
-# # install_splash()
-# # splash_container <- start_splash()
-# 
-# #------------------------------------------------------------------------------
-# #with decapitated
-# # devtools::install_github("hrbrmstr/decapitated")
-# # library("decapitated")
-# # decapitated::download_chromium("C:/Users/Sam/Documents/R/chromium")
-# # C:/Users/Sam/Documents/R/chromium/chrome-win32/chrome.exe
-# 
-# # chrome_read_html("https://collections.nmnh.si.edu/search/botany/?ark=ark:/65665/3e6b15c4986e041bdb9473025e8590b55")
-# # chrome_read_html("http://n2t.net/ark:/65665/3e6b15c49-86e0-41bd-b947-3025e8590b55")
-# # doesn't work -- locks up when trying to load website
-# 
-# 
-# -------------------------------------------------------------------------------
-# #try with RSelenium
-# # devtools::install_github("ropensci/RSelenium")
-# # install.packages("RSelenium")
-# # library("RSelenium")
-# # 
-# RSelenium::checkForServer()
-# rD <- RSelenium::rsDriver(browser = "firefox", port = 4444L)
-# 
-# remDr <- rD[["client"]]
-# remDr$navigate("http://www.google.com/ncr")
-# remDr$navigate("http://www.bbc.com")
-# remDr$close()
-# 
-# system("taskkill /im java.exe /f > nul 2>&1", intern = FALSE, ignore.stdout=TRUE, ignore.stderr=TRUE)
-# 
-# # 
-# # 
-# # remDr <- remoteDriver(remoteServerAddr = "localhost"
-# #                       , port = 4444
-# #                       , browserName = "firefox"
-# #                       )
-# # remDr$open()
-# 
-# 
-# # https://thatdatatho.com/2019/01/22/tutorial-web-scraping-rselenium/
-# 
-# driver <- RSelenium::rsDriver(browser = "chrome",
-#                               chromever =
-#                                 system2(command = "wmic",
-#                                         args = 'datafile where name="C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe" get Version /value',
-#                                         stdout = TRUE,
-#                                         stderr = TRUE) %>%
-#                                 stringr::str_extract(pattern = "(?<=Version=)\\d+\\.\\d+\\.\\d+\\.") %>%
-#                                 magrittr::extract(!is.na(.)) %>%
-#                                 stringr::str_replace_all(pattern = "\\.",
-#                                                          replacement = "\\\\.") %>%
-#                                 paste0("^",  .) %>%
-#                                 stringr::str_subset(string =
-#                                                       binman::list_versions(appname = "chromedriver") %>%
-#                                                       dplyr::last()) %>%
-#                                 as.numeric_version() %>%
-#                                 max() %>%
-#                                 as.character())
-# 
-# remote_driver <- driver[["client"]] 
-# remote_driver$navigate("https://www.latlong.net/convert-address-to-lat-long.html")
-
-# 
-# #------------------------------------------------------------------------------
-# #if link comes from new york bg, easy with rvest
-# add <- "http://sweetgum.nybg.org/science/vh/specimen_details.php?irn=148244"
-# page <- read_html(add)
-# 
-# desc_nodes <- xml_find_all(page, "//ul[contains(@class, 'occurrence-terms')]") %>% html_children()
-# 
-# loc_node <- xml_node(page, xpath = "/html/body/div[2]/section[5]/div/div/div/div/div[1]/div/div/div/ul/li[3]/p")
-# hab_node <- xml_node(page, xpath = "/html/body/div[2]/section[5]/div/div/div/div/div[1]/div/div/div/ul/li[4]/p")
-# paste(html_text(loc_node), html_text(hab_node))
-
-#todo: check on GBIF
 
 #some place names and other phrases including "campo" to remove
 campo_remove <- c("Campo de Congomhas", "Campo Congomhas", "Campo de Congonhas", "Campo Congonhas",
@@ -202,7 +88,7 @@ campo_remove <- c("Campo de Congomhas", "Campo Congomhas", "Campo de Congonhas",
                   "Viabilidade da Conservação dos Remanescentes de Cerrado",
                   "campinas",
                   "Amrérico de Campos",
-                  "cedro do campo", 
+                  "cedro do campo", "cedro de campo", "pimenteira do cerrado",
                   "pimenta do campo",
                   "angico do cerrado", "angico branco do cerrado",
                   "Análise florística e fitossociológica do estrato herbáceo-subarbustivo do cerrado na reserva biológica de Mogi Guaçu e em Itirapina, SP",
@@ -215,7 +101,8 @@ campo_remove <- c("Campo de Congomhas", "Campo Congomhas", "Campo de Congonhas",
                   "Reserva Biológica Campininha",
                   "Trilha do Campo",
                   "Estação do Campo",
-                  "campo de Aviação"
+                  "campo de Aviação",
+                  "elementos de cerrado"
                   )
 
 forest_remove <- c("horto florestal",
@@ -232,6 +119,9 @@ forest_remove <- c("horto florestal",
                    "matadouro",
                    "mata da mariana",
                    "corta a mata",
+                   "Bosque São José",
+                   "Sub-bosque", "Subosque", 
+                   "Bosque dos Jequitibás",
                    "rodeada antigamente por mata",
                    "microtopográficas e edáficas da Floresta Ombrófila Densa do Núcleo Picinguaba/PESM, Ubatuba",
                    "Estrutura da vegetação arbórea e regeneração natural em remanescentes de mata ciliar do Rio Mogi Guaçu - SP",
@@ -249,6 +139,9 @@ splink_data$forest <- NA
 #look for savanna and forest words in the notes/localities
 splink_data[grep(s_unlisted, splink_data$clean_notes, ignore.case = TRUE), "savanna"] <- 1
 splink_data[grep(f_unlisted, splink_data$clean_notes, ignore.case = TRUE), "forest"] <- 1
+
+splink_data <- splink_data[!duplicated(paste(splink_data$collectioncode, splink_data$catalognumber)), ]
+splink_data <- splink_data[!is.na(splink_data$Species_name), ]
 
 splink_aggregate <- data.frame(species = unique(splink_data$Species_name)[order(unique(splink_data$Species_name))],
                                savanna_count = numeric(length(unique(splink_data$Species_name))),

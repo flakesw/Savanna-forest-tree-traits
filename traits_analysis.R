@@ -7,15 +7,14 @@ library("vegan")
 library("multcomp")
 library("multcompView")
 library("effects")
-library("plotrix")
+library("maptools")
 library("ape")
 library("cluster")
-library("FD")
 library("phytools")
 library("Hotelling")
 
 # setwd("C:\\Users\\Sam\\Google Drive\\Projects\\Savanna traits")
-set.seed(45750762)
+set.seed(45750765)
 
 #----------------------------------------------------------------------------
 # Function to plot elliptical hulls for phylogenetic PCA,
@@ -42,18 +41,20 @@ phyellipse <- function (ord, groups, display = "sites",
 #----------------------------------------------------------------------------
 # Import and wrangle data
 #----------------------------------------------------------------------------
-
 #read data
-clean_species <- read.csv("./clean data/clean_species2020-05-04.csv")
+clean_species <- read.csv("./clean data/clean_species2020-06-09.csv")
 spList_orig <- read.csv("./raw data/sp_info_with_splink.csv")
 spList_orig <- spList_orig[spList_orig$Code %in% clean_species$Code, ]
-plot_data <- read.csv("./Clean data/plot_data2020-04-06.csv")
+write.csv(spList_orig, "./Clean data/species_list_for_appendix.csv")
+
+
+plot_data <- read.csv("./Clean data/plot_data2020-06-09.csv")
 plot_data <- subset(plot_data, !is.na(CSA_30))
 names(plot_data)[21] <- "FG"
 bark_model <- readRDS("./clean data/bark_model.RDS")
-bark_model_fg <- readRDS("./clean data/bark_model_fg.RDS")
 
 clean_species$FG <- factor(clean_species$FG,levels(clean_species$FG)[c(3,2,1)])
+# clean_species[clean_species$Code %in% c("GOPO", "TAOC", "RAGU", "MYLI"),]$FG <- "S" #to test influence of these species
 clean_species$Leaf_size <- clean_species$Leaf_size/100 
 clean_species$Total_leaf_size <- clean_species$Total_leaf_size/100 
 
@@ -73,19 +74,24 @@ clean_species_reduced_trans[, log_trans] <- log(clean_species_reduced_trans[, lo
 
 
 # Bring in phylogeny
-tree_pruned <- read.tree("./clean data/phylogeny_v")
+tree <- read.tree("./clean data/phylogeny_v")
+
+#relabel tree with code instead of names, to use later
+tree_code <- tree
+tree_code$tip.label  <- spList_orig[match(tree$tip.label, gsub(" ", "_", spList_orig$New.name)), "Code"] 
+
 
 #plot the tree
 tiff(filename = "./plots/phylogeny_pruned.tiff",
     width = 7,
     height = 7,
     units = "in",
-    pointsize = 8,
+    pointsize = 7.8,
     compression = "lzw",
     res = 600)
   
   #deal with the weird name problems
-  fg <- spList_orig[match(tree_pruned$tip.label, gsub(" ", "_", spList_orig$New.name)), "classification66"]
+  fg <- spList_orig[match(tree$tip.label, gsub(" ", "_", spList_orig$New.name)), "classification66"]
 
   # fg <- fg[!is.na(fg)]
   
@@ -93,7 +99,9 @@ tiff(filename = "./plots/phylogeny_pruned.tiff",
                              col = as.character(c("black", "#1b9e77", "#E69F00")))
   color_points <- as.character(color_groups[match(fg, color_groups$group), "col"])
   
-  plot(tree_pruned, type = "fan",
+  par(mar = c(0, 0, 0, 0))
+  
+  plot(tree, type = "fan",
        show.tip.label = TRUE,
        tip.color = color_points,
        show.node.label = TRUE)
@@ -133,11 +141,13 @@ pvals_table <- data.frame(matrix(ncol = 11, nrow = 9))
 names(pvals_table) <- c("Trait", "tG-S", "tF-S", "tF-G", "pG-S", "pF-S", "pF-G", "ANOVA", "phylANOVA", "lambda", "n")
 
 for (i in 1:length(traits_names)){
+
+  #subset the tree to only match species with data for the trait
+  tree_pruned <- drop.tip(tree_code, setdiff(tree_code$tip.label, clean_species_trans[!is.na(clean_species_trans[, traits_names[i]]), ]$Code))
+  tree_pruned$tip.label <- droplevels(tree_pruned$tip.label)
   
-  #fix the tree
-  tree_pruned <- drop.tip(tree, setdiff(tree$tip.label, clean_species_trans[!is.na(clean_species_trans[, traits_names[i]]), ]$Code)) # for phylogenetic ANOVA
   #reorder species traits to match phylogeny
-  clean_species_ordered <- clean_species_trans[match(tree_pruned$tip.label, clean_species_trans$Code), ] #reorder to match phylogeny
+  clean_species_ordered <- clean_species_trans[match(tree_pruned$tip.label, clean_species_trans$Code), ] #reorder and subset to match phylogeny
   
   pvals_table[i, 11] <- nrow(clean_species_ordered)
   
@@ -158,6 +168,7 @@ for (i in 1:length(traits_names)){
   phyl_aov_results <- phylANOVA(tree = tree_pruned, x = clean_species_ordered$FG, 
                                 y = clean_species_ordered[, traits_names[i]], 
                                 nsim=1000, posthoc=TRUE, p.adj="holm")
+  
   pvals_table[i, 9] <- phyl_aov_results$Pf
   
   pvals <- c(phyl_aov_results$Pt[2,1], phyl_aov_results$Pt[3,1], phyl_aov_results$Pt[3,2]) 
@@ -259,23 +270,11 @@ for (i in 1:length(traits_names)){
   mtext(text = traits_names_clean[i], side = 2, line = 1.9)
   
   pvals <- as.numeric(pvals_table[i, c(5:7)])
-  names(pvals) <- c("G-S", "F-S", "F-G")
+  names(pvals) <- c("S-G", "S-F", "G-F")
   pvals <- ifelse(pvals < (0.05), TRUE, FALSE)
-  tuke_letters <- multcompLetters(pvals, reversed=TRUE)$Letters[c(3,1,2)]
+  tuke_letters <- multcompLetters(pvals, reversed=FALSE)$Letters
   
-  #fixes letters sometimes being in the wrong order -- not sure why this happens?
-  if(tuke_letters[1] != "a"){
-    tuke_letters <- multcompLetters(pvals, reversed=FALSE)$Letters[c(3,1,2)]
-  }
-  
-  #plot the tuke letters for phylogenetic ANOVA
-  # ylim <- par("usr")[c(3,4)]
-  # yrange <- abs(ylim[2]-ylim[1])
-  # if(i %in% log_trans_traits){
-  #   text(x = c(1,2,3), y = log(exp(ylim[2]) - exp((ylim[2] - ylim[1])*.1)), labels = tuke_letters, cex = 1.2)
-  # }else{
   text(x = c(1,2,3), y = ylim[2] - (ylim[2] - ylim[1])*.03, labels = tuke_letters, cex = 1.2)
-  # }
 
 }
 
@@ -298,7 +297,7 @@ tiff(filename="./plots/traits_by_FG_boxplot.tiff",
      res=600)
 
 par(mfrow = c(2, 5),
-    mar = c(2,6,2,0.5),
+    mar = c(2,5,2,0.5),
     oma = c(1, 0, 0, 0))
 
 for (i in 1:length(traits_names)){
@@ -318,13 +317,13 @@ for (i in 1:length(traits_names)){
          xlab = "",
          ylab = "",
          xaxt = 'n',
-         xlim = c(0.8, 3.2),
+         xlim = c(0.5, 3.5),
          ylim = ylim,
          cex.lab = 1.3
     )
   }else{ # for log-trans traits
     
-    means[, 2] <- (means[, 2])
+    # means[, 2] <- (means[, 2])
     
     ylim <- c(log(0.8 * min((clean_species[, traits_names[i]]), na.rm = TRUE)), 
               log(1.3 * max((clean_species[, traits_names[i]]), na.rm = TRUE)))
@@ -340,7 +339,7 @@ for (i in 1:length(traits_names)){
          xlab = "",
          ylab = "",
          xaxt = 'n',
-         xlim = c(0.8, 3.2),
+         xlim = c(0.5, 3.5),
          ylim = ylim,
          cex.lab = 1.3,
          yaxt = "n"
@@ -350,30 +349,19 @@ for (i in 1:length(traits_names)){
     
     axis(side = 2, at = log(ax_labs), labels = ax_labs)
   }
-  
-  points(means[, 2] ~ c(1,2,3), pch = 18, cex = 2)
-  lines(means[, 2] ~ c(1,2,3), lty = 1, lwd = 2)
+  # 
+  # points(means[, 2] ~ c(1,2,3), pch = 18, cex = 2)
+  # lines(means[, 2] ~ c(1,2,3), lty = 1, lwd = 2)
   
   mtext(text = levels(clean_species_trans$FG), side = 1, at = c(1,2,3), line = 1)
   mtext(text = paste0("(", letters[i], ")") , side = 3, at = 0.4, line = .3)
   mtext(text = traits_names_clean[i], side = 2, line = 1.9)
   
   pvals <- as.numeric(pvals_table[i, c(5:7)])
-  names(pvals) <- c("G-S", "F-S", "F-G")
+  names(pvals) <- c("S-G", "S-F", "G-F")
   pvals <- ifelse(pvals < (0.05), TRUE, FALSE)
-  tuke_letters <- multcompLetters(pvals, reversed=TRUE)$Letters[c(3,1,2)]
-  
-  #fixes letters sometimes being in the wrong order -- not sure why this happens?
-  if(tuke_letters[1] != "a"){
-    tuke_letters <- multcompLetters(pvals, reversed=FALSE)$Letters[c(3,1,2)]
-  }
-  
-  #plot the tuke letters for phylogenetic ANOVA
-  # ylim <- par("usr")[c(3,4)]
-  # yrange <- abs(ylim[2]-ylim[1])
-  # if(i %in% log_trans_traits){
-  #   text(x = c(1,2,3), y = log(exp(ylim[2]) - exp((ylim[2] - ylim[1])*.1)), labels = tuke_letters, cex = 1.2)
-  # }else{
+  tuke_letters <- multcompLetters(pvals, reversed=FALSE)$Letters
+ 
   text(x = c(1,2,3), y = ylim[2] - (ylim[2] - ylim[1])*.03, labels = tuke_letters, cex = 1.2)
   # }
   
@@ -390,24 +378,21 @@ pca_data <- scale(clean_species_reduced_trans[, c("Leaf_size", "Leaf_thickness",
                                             "Height_at_5cm", "Crown_ratio", "SLA",
                                             "Bark_at_5cm", "Bark_at_8mm", "Wood_density", "Light_at_5cm")])
 
-
 rownames(pca_data) <- clean_species_reduced_trans$Code
 
 pca_groups <- clean_species_reduced_trans[, c("FG")]
 
-pca_sp_names <- clean_species_reduced_trans$Code
-
+pca_sp_names <- droplevels(spList_orig[match(clean_species_reduced_trans$Code, spList_orig$Code), "NewCode"])
 
 #run the PCA
 pca_results <- rda(pca_data, scale = TRUE)
 trait_names <- gsub("_", " ", rownames(pca_results$CA$v))
-sp_scores <- scores(pca_results,  choices = c(1:10), display = c("sites"))
-trait_scores <- scores(pca_results, choices = c(1:10), display = c("species"))
+sp_scores <- vegan::scores(pca_results, choices = c(1:10), display = c("sites"))
+trait_scores <- vegan::scores(pca_results, choices = c(1:10), display = c("species"))
 
 summary(pca_results)
 
 biplot(pca_results, choices = c(1,2))
-# ordihull(ord = pca_results, groups = factor(clean_species_reduced$FG))
 
 tiff(filename="./plots/traits_PCA_axes_1_2.tiff", 
      type = "cairo",
@@ -428,11 +413,11 @@ plot(NA,
                (max(c(sp_scores[, 1], trait_scores[, 1])) + 0.4)),
      ylim = c( (min(c(sp_scores[, 2], trait_scores[, 2]) - .5)), 
                (max(c(sp_scores[, 2], trait_scores[, 2])) + 0.4)))
-text(y = sp_scores[, 2], x = sp_scores[, 1], labels = pca_sp_names, col = color_points, cex = .7)
-# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
 
 abline(h = 0)
 abline(v = 0)
+
+x<-pointLabel(x = sp_scores[, 1], y = sp_scores[, 2], labels = pca_sp_names, col = color_points, cex = 0.7)
 
 for(i in 1:3){
   ordiellipse(pca_results, pca_groups, show.groups = color_groups[i, 1], 
@@ -449,16 +434,16 @@ legend(x = par()$usr[1], y = par()$usr[4],
        bty = "n")
 
 segments(x0 = 0, y0 = 0, x1 = trait_scores[, 1], y1 = trait_scores[, 2])
-# yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
-# xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
-yoffsets <- 0
-xoffesets <- 0
-text(x = trait_scores[, 1], y = trait_scores[, 2], labels = trait_names, cex = 1.3)
+yoffsets <- c(0.05, -.05, .12, .05, -.06, .05, -.065, .05, -.08, -.065)
+xoffsets <- c(-0.15, -.33, 0, 0.2, -.05, 0, -.25, -.3, .27, -.3)
+
+text(x = trait_scores[, 1]+xoffsets, y = trait_scores[, 2]+yoffsets, labels = trait_names, cex = 1.3)
 
 dev.off()
 
 #################
 # PCs 1 + 3
+
 
 tiff(filename="./plots/traits_PCA_axes_1_3.tiff", 
      type = "cairo",
@@ -480,11 +465,13 @@ plot(NA,
                (max(c(sp_scores[, 1], trait_scores[, 1])) + 0.4)),
      ylim = c( (min(c(sp_scores[, 3], trait_scores[, 3]) - .5)), 
                (max(c(sp_scores[, 3], trait_scores[, 3])) + 0.4)))
-text(y = sp_scores[, 3], x = sp_scores[, 1], labels = pca_sp_names, col = color_points, cex = .7)
-# points(y = sp_scores[, 2], x = sp_scores[, 1], col = color_points, bg = color_points, pch = 21, cex = .7)
 
 abline(h = 0)
 abline(v = 0)
+
+pointLabel(x = sp_scores[, 1], y = sp_scores[, 2], labels = pca_sp_names, col = color_points, cex = 0.7)
+
+
 
 for(i in 1:3){
   ordiellipse(pca_results, pca_groups, show.groups = color_groups[i, 1], 
@@ -501,11 +488,10 @@ legend(x = par()$usr[1], y = par()$usr[4],
        bty = "n")
 
 segments(x0 = 0, y0 = 0, x1 = trait_scores[, 1], y1 = trait_scores[, 3])
-# yoffsets <- c(-0.05, .05, -.07, -.08, .05, -.05, -.05, -.04, 0.05, -.1)
-# xoffsets <- c(0, -.05, 0, 0.2, -.05, 0, -.2, -.2, 0, 0.2)
-yoffsets <- 0
-xoffesets <- 0
-text(x = trait_scores[, 1], y = trait_scores[, 3], labels = trait_names, cex = 1.3)
+yoffsets <- c(0, -.05, -.05, 0, .05, 0, -.04, -.04, -.1, 0)
+xoffsets <- c(0, 0, 0.23, 0, -.05, 0, -.25, -.25, 0, -0.2)
+
+text(x = trait_scores[, 1]+xoffsets, y = trait_scores[, 3]+yoffsets, labels = trait_names, cex = 1.3)
 
 dev.off()
 
@@ -532,9 +518,6 @@ groups <- matrix(data = c("S", "G", "F", "G", "F", "S"), nrow = 3, ncol = 2, byr
 pca_results_out <- cbind(as.data.frame(sp_scores), pca_groups)
 names(pca_results_out)[11] <- "FG"
 
-# phy_results_out <- cbind(as.data.frame(phy_sp_scores), clean_species_ordered$FG)
-# names(phy_results_out)[11] <- "FG"
-
 for(i in 1:3){
   h2_pca <- hotelling.test(x = pca_results_out[pca_results_out$FG == groups[i,1], c(1:2)], 
                  y = pca_results_out[pca_results_out$FG == groups[i,2], c(1:2)],
@@ -549,7 +532,7 @@ anosim_data <- as.matrix(clean_species_reduced_trans[, c("Leaf_size", "Leaf_thic
 functional_group_anosim <- adonis(anosim_data ~ clean_species_reduced_trans$FG, method = "euclidean")
 summary(functional_group_anosim)
 print(functional_group_anosim)
-plot(functional_group_anosim)
+
 
 #*******************************************************************************************
 # Estimating trait distributions for plots
@@ -588,8 +571,8 @@ for(i in 1:nrow(plot_data)){#this is surely the worst way to do this
   } 
   
 }
-
-trait_summary <- aggregate(plot_data[, c(9, 21:32)], by = list(plot_data$FG, plot_data$Life.Form), FUN = mean, na.rm = TRUE)
+# names(plot_data)
+# trait_summary <- aggregate(plot_data[, c(9, 21:32)], by = list(plot_data$Classification66, plot_data$Life.Form), FUN = mean, na.rm = TRUE)
 
 #--------------------------------------------------------------------------
 # Aggregate means for each plot, weighted by CSA of trees
@@ -646,14 +629,14 @@ for ( i in 1:30){
   plot_agg_traits$BA[i] <- sum(trees_select$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
   plot_agg_traits$Density[i] <- sum(trees_select$Density_expand, na.rm = TRUE) * 10
   plot_agg_traits$QMD[i] <- sqrt((plot_agg_traits$BA[i] / plot_agg_traits$Density[i]) / 0.00007854)
-  plot_agg_traits$SavannaBA[i] <- sum(trees_select[trees_select$FG == "S", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
-  plot_agg_traits$SavannaDens[i] <- sum(trees_select[trees_select$FG == "S", "Density_expand"], na.rm= TRUE)  * 10 
+  plot_agg_traits$SavannaBA[i] <- sum(trees_select[trees_select$classification66 == "S", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$SavannaDens[i] <- sum(trees_select[trees_select$classification66 == "S", "Density_expand"], na.rm= TRUE)  * 10 
   plot_agg_traits$SavannaQMD[i] <- sqrt((plot_agg_traits$SavannaBA[i] / plot_agg_traits$SavannaDens[i]) / 0.00007854)
-  plot_agg_traits$GeneralistBA[i] <- sum(trees_select[trees_select$FG == "G", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
-  plot_agg_traits$GeneralistDens[i] <- sum(trees_select[trees_select$FG == "G", "Density_expand"], na.rm= TRUE) * 10 
+  plot_agg_traits$GeneralistBA[i] <- sum(trees_select[trees_select$classification66 == "G", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$GeneralistDens[i] <- sum(trees_select[trees_select$classification66 == "G", "Density_expand"], na.rm= TRUE) * 10 
   plot_agg_traits$GeneralistQMD[i] <- sqrt((plot_agg_traits$GeneralistBA[i] / plot_agg_traits$GeneralistDens[i]) / 0.00007854)
-  plot_agg_traits$ForestBA[i] <- sum(trees_select[trees_select$FG == "F", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
-  plot_agg_traits$ForestDens[i] <- sum(trees_select[trees_select$FG == "F", "Density_expand"], na.rm= TRUE) * 10
+  plot_agg_traits$ForestBA[i] <- sum(trees_select[trees_select$classification66 == "F", ]$CSA_BH_expand, na.rm = TRUE) / 10000 * 10
+  plot_agg_traits$ForestDens[i] <- sum(trees_select[trees_select$classification66 == "F", "Density_expand"], na.rm= TRUE) * 10
   plot_agg_traits$ForestQMD[i] <- sqrt((plot_agg_traits$ForestBA[i] / plot_agg_traits$ForestDens[i]) / 0.00007854)
   
 }
@@ -757,11 +740,11 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         expression(paste("Specific leaf area (cm"^"2"," g"^"-1",")")),
                         "Max height (m)",
                         "Height at 5 cm dia. (m)", 
-                        "       Crown ratio at 5cm dia. (unitless)",
-                        "  Bark thickness at 5cm dia. (mm)",
-                        "  Bark thickness at 8mm dia. (mm)",
+                        "Crown ratio at 5cm dia. (unitless)",
+                        "Bark thickness at 5cm dia. (mm)",
+                        "Bark thickness at 8mm dia. (mm)",
                         expression(paste("Wood density (g cm"^"-3",")")),
-                        "         Light code at 5 cm dia. (unitless)")
+                        "Light code at 5 cm dia. (unitless)")
 
 
 #initialize species x plot abundance array
@@ -812,13 +795,13 @@ tiff(filename="./plots/species_niche_centroids.tiff",
      antialias = "gray",
      compression = "lzw",
      units="in", 
-     width = 5, 
-     height=8, 
+     width = 4.5, 
+     height=7.5, 
      pointsize=12, 
      res=600)
 
 par(mfrow = c(5,2))
-par(oma = c(1,1,1,0), mar = c(4,4,1,3.5), family = "sans")
+par(oma = c(1,2.5,1,0), mar = c(4,2,1,3), family = "sans")
 
 for(i in 1:length(traits_to_plot)){
   
@@ -834,8 +817,19 @@ for(i in 1:length(traits_to_plot)){
        bg = color_points[not_na])
   
   temp <- summary(lm( SNC ~ traits[, eval(substitute(trait))]))
-  
-  if(!(i %in% c(3,4,5,9))){ #plot p-values in different locations for different plots
+  if(i == 1){
+    text(x = par()$usr[1], 
+         y = par()$usr[4] - .08*(par()$usr[4] - par()$usr[3]),
+         pos = 4, 
+         labels = ifelse(coef(temp)[2, 4] > 0.001,
+                         paste("p =", round(coef(temp)[2, 4], 3)),
+                         "p < 0.001"))
+    text(x = par()$usr[1], 
+         y = par()$usr[4] - .2*(par()$usr[4] - par()$usr[3]),  
+         pos = 4, 
+         labels = paste("r =", (round(sqrt(temp$r.squared), 2) * sign(coef(temp)[2,1])) ))
+  }
+  if(i %in% c(2,7,8)){ #plot p-values in different locations for different plots. This is a dumb way to do this sorry future me
     text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
          y = par()$usr[4] - .08*(par()$usr[4] - par()$usr[3]),
          pos = 4, 
@@ -846,7 +840,8 @@ for(i in 1:length(traits_to_plot)){
          y = par()$usr[4] - .2*(par()$usr[4] - par()$usr[3]),  
          pos = 4, 
          labels = paste("r =", (round(sqrt(temp$r.squared), 2) * sign(coef(temp)[2,1])) ))
-  } else{
+  }
+  if(i %in% c(3,4,5,9)){
     text(x = par()$usr[2] - .4*(par()$usr[2] - par()$usr[1]), 
          y = par()$usr[3] + .08*(par()$usr[4] - par()$usr[3]),
          pos = 4, 
@@ -858,8 +853,20 @@ for(i in 1:length(traits_to_plot)){
                          paste("p =", round(coef(temp)[2, 4], 3)),
                          "p < 0.001"))
   }
+  if(i %in% c(6,10)){
+    text(x = par()$usr[1], 
+         y = par()$usr[3] + .08*(par()$usr[4] - par()$usr[3]),
+         pos = 4, 
+         labels = paste("r =", (round(sqrt(temp$r.squared), 2) * sign(coef(temp)[2,1])) ))
+    text(x = par()$usr[1], 
+         y = par()$usr[3] + .2*(par()$usr[4] - par()$usr[3]),  
+         pos = 4, 
+         labels = ifelse(coef(temp)[2, 4] > 0.001,
+                         paste("p =", round(coef(temp)[2, 4], 3)),
+                         "p < 0.001"))
+  }
   
-  mtext(side = 1, text = traits_names_clean[i], line = 2.3, cex = 0.8)
+  mtext(side = 1, text = traits_names_clean[i], line = 2.3, cex = 0.7)
   
   mtext(side = 3, text = paste0("(", letters[i], ")"), 
         at = (par()$usr[1] + .1*(par()$usr[2] - par()$usr[1])), 
@@ -867,7 +874,7 @@ for(i in 1:length(traits_to_plot)){
   
   # if(i %in% c(1,3,5,7,9)){
     mtext(side = 2, outer = TRUE,
-          text = expression(paste("Species niche centroid for basal area (m"^"2", " ha"^"-1", ")")), cex = 1.15, line = -2)
+          text = expression(paste("SNC for BA (m"^"2", " ha"^"-1", ")")), cex = 1.15, line = 0)
   # }
   #make line dashed or solid depending upon the p-value
   abline(coef(temp)[, 1], lty = ifelse(temp$coefficients[2, 4] < (0.05), 1, 2)) 
@@ -900,6 +907,8 @@ tiff(filename="./plots/pca_against_SNC.tiff",
      res=600)
 
 par(mfrow = c(2,1))
+par(mar = c(5,5,1,1))
+par(oma = c(``,0,0,0))
 
 plot(SNC ~ scores_test[, 1],
      xlab = "PC1")
@@ -912,6 +921,38 @@ abline(lm(SNC ~ scores_test[, 2]), lty = 2)
 summary(lm(SNC ~ scores_test[, 2]))
 
 dev.off()
+
+
+# average SNC for each FT
+
+tiff(filename="./plots/SNC by FG.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 3, 
+     height=3, 
+     pointsize=12, 
+     res=600)
+
+SNC <- as.numeric(as.character(plot_agg_traits$BA %*% L))
+names(SNC) <- colnames(abund)
+SNC <- SNC[names(SNC) %in% rownames(scores_test)]
+
+
+fg_test <- spList_orig[match(names(SNC), spList_orig$Code), "classification66"]
+fg_test <- factor(fg_test, levels=rev(levels(fg_test)))
+
+par(oma = c(0,0,0,0))
+par(mar = c(4.1,5.1,2.1,1.1))
+
+boxplot(SNC ~ fg_test, xlab = "Functional type", ylab = expression(paste("SNC for BA (m"^"2", " ha"^"-1", ")")))
+aggregate(SNC, by = list(fg_test), FUN = mean)
+aggregate(SNC, by = list(fg_test), FUN = function(x){sd(x)/sqrt(length(x))})
+
+dev.off()
+
+
 
 #----------------------------------------------------------------------------------
 # Figure 1: Functional type ~ BA
@@ -927,15 +968,17 @@ tiff(filename="./plots/change_in_FTs.tiff",
      res=600)
 
 par(mfrow = c(2,1))
-par(oma = c(2,1.7,0,1))
+par(oma = c(2,2.4,0,1))
 par(mar = c(1,2,1,0))
 cols <- c("black", "#1b9e77", "#E69F00")
 pchs <- c(15,16,17)
 
-plot(NA, ylim = c(0, 35), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
-legend(x = -1, y = 36, legend = c("Forest", "Generalist", "Savanna"), 
+plot(NA, ylim = c(0, 30), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
+legend(x = -1, y = 31, legend = c("Forest", "Generalist", "Savanna"), 
        col = cols[c(1,2,3)], pch = pchs[c(1,2,3)], bty = "n")
-mtext(side = 2, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 2)
+mtext(side = 2, text = "Functional type", line = 3.4, adj = 0.5)
+mtext(side = 2, text = expression(paste("basal area (m"^"2", " ha"^"-1", ")")), line = 2,
+      adj = 0.5)
 mtext(side = 3, text = "(a)", at = 0)
 axis(1, labels = FALSE)
 
@@ -945,34 +988,33 @@ for (type in c("ForestBA", "GeneralistBA", "SavannaBA")){
          pch = pchs[i], bg = cols[i], col = cols[i])
   newdata <- seq(0, 28, length.out = 100)
   mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
-  print(coef(summary(mod))[2, 4])
+  # print(coef(summary(mod))[2, 4])
   preds <- predict(mod, newdata = list(BA = newdata))
   lines(preds ~ newdata, col = cols[i], lwd = 2)
   i <- i+1
 }
 
 
-plot(NA, ylim = c(0, 8000), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
-mtext(side = 2, text = expression(paste("Density (", "ha"^"-1", ")")), line = 2)
-mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 1, outer = TRUE)
+plot(NA, ylim = c(0, 1), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
+mtext(side = 2, text = "Proportion of BA", line = 2)
+mtext(side = 1, text = expression(paste("Plot basal area (m"^"2", " ha"^"-1", ")")), line = 1, outer = TRUE,
+      adj = 0.5)
 mtext(side = 3, text = "(b)", at = 0)
 axis(1, labels = TRUE, padj = -.5)
 
 i <- 1
-for (type in c("ForestDens", "GeneralistDens", "SavannaDens")){
-  points(plot_agg_traits[[type]] ~ BA, data = plot_agg_traits, 
+for (type in c("ForestBA", "GeneralistBA", "SavannaBA")){
+  points(I(plot_agg_traits[[type]]/BA) ~ BA, data = plot_agg_traits,
          pch = pchs[i], bg = cols[i], col = cols[i])
   newdata <- seq(0, 28, length.out = 100)
-  mod <- lm(plot_agg_traits[[type]] ~ poly(BA,2), data = plot_agg_traits)
-  print(coef(summary(mod))[2, 4])
+  mod <- lm(I(plot_agg_traits[[type]]/plot_agg_traits$BA) ~ poly(BA,2), data = plot_agg_traits)
+  # print(coef(summary(mod))[2, 4])
   preds <- predict(mod, newdata = list(BA = newdata))
-  lines(preds ~ newdata, col = cols[i], lwd = 2)
+  if(type != "GeneralistBA"){lines(preds ~ newdata, col = cols[i], lwd = 2)}
   i <- i+1
 }
 
-
 dev.off()
-
 
 
 tiff(filename="./plots/change_in_FTs_for_talk.tiff", 
@@ -1009,6 +1051,47 @@ for (type in c("ForestDens", "GeneralistDens", "SavannaDens")){
 
 dev.off()
 
+tiff(filename="./plots/change_in_FTs_for_talk.tiff", 
+     type = "cairo",
+     antialias = "gray",
+     compression = "lzw",
+     units="in", 
+     width = 4, 
+     height=4, 
+     pointsize=12, 
+     res=600)
+
+par(oma = c(2,1.7,0,1))
+par(mar = c(1,2,1,0))
+cols <- c("#1b9e77", "#E69F00")
+pchs <- c(16,17)
+
+plot(NA, ylim = c(0, 8000), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
+mtext(side = 2, text = expression(paste("Density (", "ha"^"-1", ")")), line = 2)
+mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 1, outer = TRUE)
+axis(1, labels = TRUE, padj = -.5)
+
+
+points(plot_agg_traits[["SavannaDens"]] ~ BA, data = plot_agg_traits, 
+       pch = pchs[2], bg = cols[2], col = cols[2])
+newdata <- seq(0, 28, length.out = 100)
+mod <- lm(plot_agg_traits[["SavannaDens"]] ~ poly(BA,2), data = plot_agg_traits)
+print(coef(summary(mod))[2, 4])
+preds <- predict(mod, newdata = list(BA = newdata))
+lines(preds ~ newdata, col = cols[2], lwd = 2)
+
+points(I(plot_agg_traits[["ForestDens"]] + plot_agg_traits[["GeneralistDens"]])~ BA, data = plot_agg_traits, 
+       pch = pchs[1], bg = cols[1], col = cols[1])
+
+newdata <- seq(0, 28, length.out = 100)
+mod <- lm(I(plot_agg_traits[["ForestDens"]] + plot_agg_traits[["GeneralistDens"]]) ~ poly(BA,2), data = plot_agg_traits)
+print(coef(summary(mod))[2, 4])
+preds <- predict(mod, newdata = list(BA = newdata))
+lines(preds ~ newdata, col = cols[1], lwd = 2)
+
+
+dev.off()
+
 
 
 #------------------------------------------------------------------------------
@@ -1017,7 +1100,9 @@ dev.off()
 # TODO: make tables and figures for supplement
 #------------------------------------------------------------------------------
 summary(lm(plot_agg_traits$SavannaBA ~ plot_agg_traits$BA))
+summary(lm(plot_agg_traits$SavannaBA ~ poly(plot_agg_traits$BA,2)))
 plot(plot_agg_traits$SavannaBA ~ plot_agg_traits$BA)
+
 summary(lm(plot_agg_traits$SavannaDens ~ plot_agg_traits$Density))
 plot(plot_agg_traits$SavannaDens ~ plot_agg_traits$Density)
 
@@ -1032,11 +1117,18 @@ summary(lm(plot_agg_traits$ForestDens ~ plot_agg_traits$Density))
 plot(plot_agg_traits$ForestDens ~ plot_agg_traits$Density)
 
 
-summary(lm(I(plot_agg_traits$SavannaBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA))
-summary(lm(I(plot_agg_traits$GeneralistBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA))
-summary(lm(I(plot_agg_traits$ForestBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA))
+summary(lm(I(plot_agg_traits$SavannaBA / plot_agg_traits$BA)  ~ poly(plot_agg_traits$BA,2)))
+summary(lm(I(plot_agg_traits$GeneralistBA / plot_agg_traits$BA)  ~ poly(plot_agg_traits$BA,2)))
+summary(lm(I(plot_agg_traits$ForestBA / plot_agg_traits$BA)  ~ poly(plot_agg_traits$BA,2)))
+
+plot(I(plot_agg_traits$SavannaBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA)
+plot(I(plot_agg_traits$GeneralistBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA)
+plot(I(plot_agg_traits$ForestBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA)
 
 summary(lm(I(plot_agg_traits$SavannaDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
 summary(lm(I(plot_agg_traits$GeneralistDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
 summary(lm(I(plot_agg_traits$ForestDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
 
+plot(I(plot_agg_traits$SavannaDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density)
+plot(I(plot_agg_traits$GeneralistDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density)
+plot(I(plot_agg_traits$ForestDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density)
