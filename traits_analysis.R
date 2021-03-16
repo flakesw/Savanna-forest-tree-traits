@@ -16,6 +16,7 @@ library("Hotelling")
 # setwd("C:\\Users\\Sam\\Google Drive\\Projects\\Savanna traits")
 set.seed(45750765)
 
+
 #----------------------------------------------------------------------------
 # Function to plot elliptical hulls for phylogenetic PCA,
 # modified from vegan::ordiellipse. I removed a bunch of functionality,
@@ -229,10 +230,15 @@ for (i in 1:length(traits_names)){
          xlab = "",
          ylab = "",
          xaxt = 'n',
+         yaxt = 'n',
          xlim = c(0.8, 3.2),
          ylim = ylim,
          cex.lab = 1.3
        )
+    
+    axis(side = 2, las = 2)
+    
+    
   }else{ # for log-trans traits
 
     means[, 2] <- (means[, 2])
@@ -259,7 +265,8 @@ for (i in 1:length(traits_names)){
     
     ax_labs <- axisTicks(log10(range(exp(clean_species_trans[, traits_names[i]]), na.rm = TRUE)), log = TRUE, n = 5)
 
-    axis(side = 2, at = log(ax_labs), labels = ax_labs)
+    axis(side = 2, at = log(ax_labs), labels = ax_labs, las = 2)
+    
   }
   
   points(means[, 2] ~ c(1,2,3), pch = 18, cex = 2)
@@ -267,7 +274,7 @@ for (i in 1:length(traits_names)){
   
   mtext(text = levels(clean_species_trans$FG), side = 1, at = c(1,2,3), line = 1)
   mtext(text = paste0("(", letters[i], ")") , side = 3, at = 0.4, line = .3)
-  mtext(text = traits_names_clean[i], side = 2, line = 1.9)
+  mtext(text = traits_names_clean[i], side = 2, line = 2.6)
   
   pvals <- as.numeric(pvals_table[i, c(5:7)])
   names(pvals) <- c("S-G", "S-F", "G-F")
@@ -286,7 +293,7 @@ dev.off()
 # Same figure as a boxplot
 #------------------------------------------------------------------------------
 
-tiff(filename="./plots/traits_by_FG_boxplot.tiff", 
+tiff(filename="./plots/Figure_2_traits_by_FG_boxplot.tiff", 
      type = "cairo",
      antialias = "gray",
      compression = "lzw",
@@ -297,8 +304,8 @@ tiff(filename="./plots/traits_by_FG_boxplot.tiff",
      res=600)
 
 par(mfrow = c(2, 5),
-    mar = c(2,5,2,0.5),
-    oma = c(1, 0, 0, 0))
+    mar = c(2,5.2,2,0.5),
+    oma = c(1, .3, 0, 0))
 
 for (i in 1:length(traits_names)){
   # model <- lm(clean_species_reduced[, traits_names[i]] ~ as.factor(clean_species_reduced$FG))
@@ -317,10 +324,14 @@ for (i in 1:length(traits_names)){
          xlab = "",
          ylab = "",
          xaxt = 'n',
+         yaxt = 'n',
          xlim = c(0.5, 3.5),
          ylim = ylim,
          cex.lab = 1.3
     )
+    
+    axis(2, las = 2)
+    
   }else{ # for log-trans traits
     
     # means[, 2] <- (means[, 2])
@@ -347,7 +358,7 @@ for (i in 1:length(traits_names)){
     
     ax_labs <- axisTicks(log10(range(exp(clean_species_trans[, traits_names[i]]), na.rm = TRUE)), log = TRUE, n = 5)
     
-    axis(side = 2, at = log(ax_labs), labels = ax_labs)
+    axis(side = 2, at = log(ax_labs), labels = ax_labs, las = 2)
   }
   # 
   # points(means[, 2] ~ c(1,2,3), pch = 18, cex = 2)
@@ -355,7 +366,7 @@ for (i in 1:length(traits_names)){
   
   mtext(text = levels(clean_species_trans$FG), side = 1, at = c(1,2,3), line = 1)
   mtext(text = paste0("(", letters[i], ")") , side = 3, at = 0.4, line = .3)
-  mtext(text = traits_names_clean[i], side = 2, line = 1.9)
+  mtext(text = traits_names_clean[i], side = 2, line = 2.3)
   
   pvals <- as.numeric(pvals_table[i, c(5:7)])
   names(pvals) <- c("S-G", "S-F", "G-F")
@@ -445,7 +456,7 @@ dev.off()
 # PCs 1 + 3
 
 
-tiff(filename="./plots/traits_PCA_axes_1_3.tiff", 
+tiff(filename="./plots/Figure_3_traits_PCA_axes_1_3.tiff", 
      type = "cairo",
      antialias = "gray",
      compression = "lzw",
@@ -464,10 +475,13 @@ plot(NA,
      xlim = c( (min(c(sp_scores[, 1], trait_scores[, 1]) - .5)), 
                (max(c(sp_scores[, 1], trait_scores[, 1])) + 0.4)),
      ylim = c( (min(c(sp_scores[, 3], trait_scores[, 3]) - .5)), 
-               (max(c(sp_scores[, 3], trait_scores[, 3])) + 0.4)))
+               (max(c(sp_scores[, 3], trait_scores[, 3])) + 0.4)),
+     yaxt = "n")
 
 abline(h = 0)
 abline(v = 0)
+
+axis(2, las = 2)
 
 pointLabel(x = sp_scores[, 1], y = sp_scores[, 2], labels = pca_sp_names, col = color_points, cex = 0.7)
 
@@ -662,7 +676,7 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
 
 #Generate Figure 4
 
-tiff(filename="./plots/community_weighted_traits.tiff", 
+tiff(filename="./plots/Figure_4_community_weighted_traits.tiff", 
      type = "cairo",
      antialias = "gray",
      compression = "lzw",
@@ -684,7 +698,10 @@ for(i in 1:length(traits_to_plot)){
        ylab = "",
        ylim = c(min(plot_agg_traits[, eval(substitute(trait))]), max(plot_agg_traits[, eval(substitute(trait))]) * 1.05),
        pch = 21, 
-       bg = "grey")
+       bg = "grey",
+       yaxt = "n")
+  
+  axis(2, las = 2)
 
   temp <- summary(lm( plot_agg_traits[, eval(substitute(trait))] ~ plot_agg_traits$BA))
   
@@ -712,7 +729,7 @@ for(i in 1:length(traits_to_plot)){
                          "p < 0.001"))
   }
   
-  mtext(side = 2, text = traits_names_clean[i], line = 2, cex = 0.8)
+  mtext(side = 2, text = traits_names_clean[i], line = 2.6, cex = 0.8)
   mtext(side = 3, text = paste0("(", letters[i], ")"), line = 0.7, at = 2, cex = 0.8)
   if(i %in% c(9,10)){
     mtext(side = 1, text = expression(paste("Basal area (m"^"2", " ha"^"-1", ")")), line = 2.8)
@@ -957,7 +974,7 @@ dev.off()
 #----------------------------------------------------------------------------------
 # Figure 1: Functional type ~ BA
 #----------------------------------------------------------------------------------
-tiff(filename="./plots/change_in_FTs.tiff", 
+tiff(filename="./plots/Figure_1_change_in_FTs.tiff", 
      type = "cairo",
      antialias = "gray",
      compression = "lzw",
@@ -973,7 +990,7 @@ par(mar = c(1,2,1,0))
 cols <- c("black", "#1b9e77", "#E69F00")
 pchs <- c(15,16,17)
 
-plot(NA, ylim = c(0, 30), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
+plot(NA, ylim = c(0, 30), xlim = c(0, 30), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
 legend(x = -1, y = 31, legend = c("Forest", "Generalist", "Savanna"), 
        col = cols[c(1,2,3)], pch = pchs[c(1,2,3)], bty = "n")
 mtext(side = 2, text = "Functional type", line = 3.4, adj = 0.5)
@@ -981,6 +998,7 @@ mtext(side = 2, text = expression(paste("basal area (m"^"2", " ha"^"-1", ")")), 
       adj = 0.5)
 mtext(side = 3, text = "(a)", at = 0)
 axis(1, labels = FALSE)
+axis(2, las = 2)
 
 i <- 1
 for (type in c("ForestBA", "GeneralistBA", "SavannaBA")){
@@ -995,12 +1013,13 @@ for (type in c("ForestBA", "GeneralistBA", "SavannaBA")){
 }
 
 
-plot(NA, ylim = c(0, 1), xlim = c(0, 30), xaxt = "n", ylab = "", xlab = "")
-mtext(side = 2, text = "Proportion of BA", line = 2)
+plot(NA, ylim = c(0, 1), xlim = c(0, 30), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+mtext(side = 2, text = "Proportion of BA", line = 2.5)
 mtext(side = 1, text = expression(paste("Plot basal area (m"^"2", " ha"^"-1", ")")), line = 1, outer = TRUE,
       adj = 0.5)
 mtext(side = 3, text = "(b)", at = 0)
 axis(1, labels = TRUE, padj = -.5)
+axis(2, las = 2)
 
 i <- 1
 for (type in c("ForestBA", "GeneralistBA", "SavannaBA")){
