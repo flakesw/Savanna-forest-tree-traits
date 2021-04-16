@@ -405,7 +405,9 @@ summary(pca_results)
 
 biplot(pca_results, choices = c(1,2))
 
-tiff(filename="./plots/traits_PCA_axes_1_2.tiff", 
+set.seed(45750766)
+
+tiff(filename="./plots/Figure_3_traits_PCA_axes_1_2.tiff", 
      type = "cairo",
      antialias = "gray",
      compression = "lzw",
@@ -445,7 +447,7 @@ legend(x = par()$usr[1], y = par()$usr[4],
        bty = "n")
 
 segments(x0 = 0, y0 = 0, x1 = trait_scores[, 1], y1 = trait_scores[, 2])
-yoffsets <- c(0.05, -.05, .12, .05, -.06, .05, -.065, .05, -.08, -.065)
+yoffsets <- c(0.12, -.05, 0.03, .05, -.06, .05, -.08, .05, -.15, 0.02)
 xoffsets <- c(-0.15, -.33, 0, 0.2, -.05, 0, -.25, -.3, .27, -.3)
 
 text(x = trait_scores[, 1]+xoffsets, y = trait_scores[, 2]+yoffsets, labels = trait_names, cex = 1.3)
@@ -456,7 +458,7 @@ dev.off()
 # PCs 1 + 3
 
 
-tiff(filename="./plots/Figure_3_traits_PCA_axes_1_3.tiff", 
+tiff(filename="./plots/Figure_S2_traits_PCA_axes_1_3.tiff", 
      type = "cairo",
      antialias = "gray",
      compression = "lzw",
@@ -483,7 +485,7 @@ abline(v = 0)
 
 axis(2, las = 2)
 
-pointLabel(x = sp_scores[, 1], y = sp_scores[, 2], labels = pca_sp_names, col = color_points, cex = 0.7)
+pointLabel(x = sp_scores[, 1], y = sp_scores[, 3], labels = pca_sp_names, col = color_points, cex = 0.7)
 
 
 
