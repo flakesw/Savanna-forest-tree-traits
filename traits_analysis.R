@@ -1,4 +1,18 @@
-## Bivariate and ordination analysis
+# Analyses of plant functional traits, including bivariate, multivariate
+# comparisons between species and functional types and calculation of 
+# community-weighted means
+# Sam Flake, sflake@gmail.com
+#
+# This script does all of the analysis of species traits as well as 
+# generating the figures used in the manuscript. 
+# 
+# inputs: species-level traits generated from plant_trait_data_prep.R (./clean data/clean_species2020-06-09.csv)
+#         species list with speciesLink classifications (./raw data/sp_info_with_splink.csv)
+#         clean plot inventory data (./clean data/plot_data2020-06-09.csv)
+#         phylogenetic tree (./clean data/phylogeny_v)
+#         
+# outputs: all figures and tables for Functional Ecology manuscript
+
 
 # load libraries
 library("ggplot2")
@@ -13,15 +27,14 @@ library("cluster")
 library("phytools")
 library("Hotelling")
 
-# setwd("C:\\Users\\Sam\\Google Drive\\Projects\\Savanna traits")
 set.seed(45750765)
 
+# helper functions
 
-#----------------------------------------------------------------------------
 # Function to plot elliptical hulls for phylogenetic PCA,
 # modified from vegan::ordiellipse. I removed a bunch of functionality,
 # so now it only draws elliptical hulls. I really forget why I had to butcher it.
-#----------------------------------------------------------------------------
+
 phyellipse <- function (ord, groups, display = "sites",
                         col = NULL, 
                         show.groups, choices = c(1,2), ...) 
@@ -48,11 +61,9 @@ spList_orig <- read.csv("./raw data/sp_info_with_splink.csv")
 spList_orig <- spList_orig[spList_orig$Code %in% clean_species$Code, ]
 write.csv(spList_orig, "./Clean data/species_list_for_appendix.csv")
 
-
 plot_data <- read.csv("./Clean data/plot_data2020-06-09.csv")
 plot_data <- subset(plot_data, !is.na(CSA_30))
 names(plot_data)[21] <- "FG"
-bark_model <- readRDS("./clean data/bark_model.RDS")
 
 clean_species$FG <- factor(clean_species$FG,levels(clean_species$FG)[c(3,2,1)])
 # clean_species[clean_species$Code %in% c("GOPO", "TAOC", "RAGU", "MYLI"),]$FG <- "S" #to test influence of these species
@@ -73,14 +84,12 @@ log_trans <- c(4, 5, 6, 9, 11)
 clean_species_trans[, log_trans] <- log(clean_species[, log_trans])
 clean_species_reduced_trans[, log_trans] <- log(clean_species_reduced_trans[, log_trans])
 
-
 # Bring in phylogeny
 tree <- read.tree("./clean data/phylogeny_v")
 
 #relabel tree with code instead of names, to use later
 tree_code <- tree
 tree_code$tip.label  <- spList_orig[match(tree$tip.label, gsub(" ", "_", spList_orig$New.name)), "Code"] 
-
 
 #plot the tree
 tiff(filename = "./plots/phylogeny_pruned.tiff",
@@ -119,14 +128,14 @@ dev.off()
 # What proportion of tree species sampled? For results section
 #------------------------------------------------------------------------------
 #calculate using both clean_species and clean_species_reduced
-total_ba <- sum(plot_data$CSA_30_expand, na.rm = TRUE)
-sampled_ba <- sum(plot_data[plot_data$Code %in% clean_species$Code, ]$CSA_30_expand, na.rm = TRUE)
-sampled_ba/total_ba
-
-plot_ba <- aggregate(plot_data[, c("P", "CSA_30_expand")], by = list(plot_data$P), FUN = function(x){sum(x, na.rm=TRUE)})
-sampled_plot_ba <- aggregate(plot_data[plot_data$Code %in% clean_species$Code, c("P", "CSA_30_expand")], 
-                             by = list(plot_data[plot_data$Code %in% clean_species$Code, ]$P), FUN = function(x){sum(x, na.rm=TRUE)})
-sampled_plot_ba$CSA_30_expand / plot_ba$CSA_30_expand
+# total_ba <- sum(plot_data$CSA_30_expand, na.rm = TRUE)
+# sampled_ba <- sum(plot_data[plot_data$Code %in% clean_species$Code, ]$CSA_30_expand, na.rm = TRUE)
+# sampled_ba/total_ba
+# 
+# plot_ba <- aggregate(plot_data[, c("P", "CSA_30_expand")], by = list(plot_data$P), FUN = function(x){sum(x, na.rm=TRUE)})
+# sampled_plot_ba <- aggregate(plot_data[plot_data$Code %in% clean_species$Code, c("P", "CSA_30_expand")], 
+#                              by = list(plot_data[plot_data$Code %in% clean_species$Code, ]$P), FUN = function(x){sum(x, na.rm=TRUE)})
+# sampled_plot_ba$CSA_30_expand / plot_ba$CSA_30_expand
 
 #------------------------------------------------------------------------------
 # Bivariate analyses
@@ -562,12 +571,13 @@ plot_data$Crown_ratio <- NA
 plot_data$SLA <- NA
 plot_data$Bark_at_5cm <- NA
 plot_data$Bark_at_8mm <- NA
-plot_data$est_bark_thickness <- NA
+#plot_data$est_bark_thickness <- NA
 plot_data$Wood_density <- NA
 plot_data$Light_at_5cm <- NA
 
-
+# which species did we measure traits for?
 was_measured <- plot_data$Code %in% clean_species$Code
+
 # estimate traits for entries in the plot data
 
 for(i in 1:nrow(plot_data)){#this is surely the worst way to do this
@@ -581,7 +591,6 @@ for(i in 1:nrow(plot_data)){#this is surely the worst way to do this
     plot_data$SLA[i] <- clean_species[clean_species$Code == as.character(plot_data$Code[i]), "SLA"]
     plot_data$Bark_at_5cm[i] <- clean_species[clean_species$Code == as.character(plot_data$Code[i]), "Bark_at_5cm"]
     plot_data$Bark_at_8mm[i] <- clean_species[clean_species$Code == as.character(plot_data$Code[i]), "Bark_at_8mm"]
-    plot_data$est_bark_thickness[i] <- predict(bark_model, newdata = list(max_d30 = plot_data$Max_D30[i], Code = plot_data$Code[i]))
     plot_data$Wood_density[i] <- clean_species[clean_species$Code == as.character(plot_data$Code[i]), "Wood_density"]
     plot_data$Light_at_5cm[i] <- clean_species[clean_species$Code == as.character(plot_data$Code[i]), "Light_at_5cm"]
   } 
@@ -605,7 +614,7 @@ plot_agg_traits <- data.frame(Plot = as.integer(seq(1:30)),
                               SLA = numeric(30),
                               Bark_at_5cm = numeric(30),
                               Bark_at_8mm = numeric(30),
-                              est_bark_thickness = numeric(30),
+                              #est_bark_thickness = numeric(30),
                               Wood_density = numeric(30),
                               Light_at_5cm = numeric(30),
                               Light_code = numeric(30),
@@ -635,7 +644,7 @@ for ( i in 1:30){
   plot_agg_traits$SLA[i] <- weighted.mean(x = trees_select[!is.na(trees_select$SLA), ]$SLA, w = trees_select[!is.na(trees_select$SLA), ]$CSA_30_expand, na.rm = TRUE)
   plot_agg_traits$Bark_at_5cm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_5cm), ]$Bark_at_5cm, w = trees_select[!is.na(trees_select$Bark_at_5cm), ]$CSA_30_expand, na.rm = TRUE)
   plot_agg_traits$Bark_at_8mm[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Bark_at_8mm), ]$Bark_at_8mm, w = trees_select[!is.na(trees_select$Bark_at_8mm), ]$CSA_30_expand, na.rm = TRUE)
-  plot_agg_traits$est_bark_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$est_bark_thickness), ]$est_bark_thickness, w = trees_select[!is.na(trees_select$est_bark_thickness), ]$CSA_30_expand, na.rm = TRUE)
+  #plot_agg_traits$est_bark_thickness[i] <- weighted.mean(x = trees_select[!is.na(trees_select$est_bark_thickness), ]$est_bark_thickness, w = trees_select[!is.na(trees_select$est_bark_thickness), ]$CSA_30_expand, na.rm = TRUE)
   plot_agg_traits$Wood_density[i] <- weighted.mean(x = trees_select[!is.na(trees_select$Wood_density), ]$Wood_density, w = trees_select[!is.na(trees_select$Wood_density), ]$CSA_30_expand, na.rm = TRUE)
   plot_agg_traits$Light_at_5cm[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light_at_5cm), ]$Light_at_5cm, w = trees_select[!is.na(trees_select$Light_at_5cm), ]$CSA_30_expand, na.rm = TRUE)
   plot_agg_traits$Light_code[i] = weighted.mean(x = trees_select[!is.na(trees_select$Light.code), ]$Light.code, w = trees_select[!is.na(trees_select$Light.code), ]$CSA_30_expand, na.rm = TRUE)
@@ -676,7 +685,9 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         expression(paste("Wood density (g cm"^"-3",")")),
                         "         Light code\nat 5 cm dia. (unitless)")
 
+#------------------------------------------------------------------------------
 #Generate Figure 4
+#------------------------------------------------------------------------------
 
 tiff(filename="./plots/Figure_4_community_weighted_traits.tiff", 
      type = "cairo",
@@ -902,10 +913,9 @@ for(i in 1:length(traits_to_plot)){
 
 dev.off()
 
-
+#------------------------------------------------------------------------------
 # Plot PCA scores against SNC
-
-
+#------------------------------------------------------------------------------
 scores_test <- sp_scores[, c(1, 2)]
 scores_test <- scores_test[rownames(scores_test) %in% rownames(traits), ]
 scores_test <- scores_test[order(rownames(scores_test)), ]
@@ -941,9 +951,9 @@ summary(lm(SNC ~ scores_test[, 2]))
 
 dev.off()
 
-
+#------------------------------------------------------------------------------
 # average SNC for each FT
-
+#------------------------------------------------------------------------------
 tiff(filename="./plots/SNC by FG.tiff", 
      type = "cairo",
      antialias = "gray",
@@ -970,8 +980,6 @@ aggregate(SNC, by = list(fg_test), FUN = mean)
 aggregate(SNC, by = list(fg_test), FUN = function(x){sd(x)/sqrt(length(x))})
 
 dev.off()
-
-
 
 #----------------------------------------------------------------------------------
 # Figure 1: Functional type ~ BA
@@ -1112,44 +1120,3 @@ lines(preds ~ newdata, col = cols[1], lwd = 2)
 
 
 dev.off()
-
-
-
-#------------------------------------------------------------------------------
-# Change in FTs over stand BA
-#
-# TODO: make tables and figures for supplement
-#------------------------------------------------------------------------------
-summary(lm(plot_agg_traits$SavannaBA ~ plot_agg_traits$BA))
-summary(lm(plot_agg_traits$SavannaBA ~ poly(plot_agg_traits$BA,2)))
-plot(plot_agg_traits$SavannaBA ~ plot_agg_traits$BA)
-
-summary(lm(plot_agg_traits$SavannaDens ~ plot_agg_traits$Density))
-plot(plot_agg_traits$SavannaDens ~ plot_agg_traits$Density)
-
-summary(lm(plot_agg_traits$GeneralistBA ~ plot_agg_traits$BA))
-plot(plot_agg_traits$GeneralistBA ~ plot_agg_traits$BA)
-summary(lm(plot_agg_traits$GeneralistDens ~ plot_agg_traits$Density))
-plot(plot_agg_traits$GeneralistDens ~ plot_agg_traits$Density)
-
-summary(lm(plot_agg_traits$ForestBA ~ plot_agg_traits$BA))
-plot(plot_agg_traits$ForestBA ~ plot_agg_traits$BA)
-summary(lm(plot_agg_traits$ForestDens ~ plot_agg_traits$Density))
-plot(plot_agg_traits$ForestDens ~ plot_agg_traits$Density)
-
-
-summary(lm(I(plot_agg_traits$SavannaBA / plot_agg_traits$BA)  ~ poly(plot_agg_traits$BA,2)))
-summary(lm(I(plot_agg_traits$GeneralistBA / plot_agg_traits$BA)  ~ poly(plot_agg_traits$BA,2)))
-summary(lm(I(plot_agg_traits$ForestBA / plot_agg_traits$BA)  ~ poly(plot_agg_traits$BA,2)))
-
-plot(I(plot_agg_traits$SavannaBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA)
-plot(I(plot_agg_traits$GeneralistBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA)
-plot(I(plot_agg_traits$ForestBA / plot_agg_traits$BA)  ~ plot_agg_traits$BA)
-
-summary(lm(I(plot_agg_traits$SavannaDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
-summary(lm(I(plot_agg_traits$GeneralistDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
-summary(lm(I(plot_agg_traits$ForestDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density))
-
-plot(I(plot_agg_traits$SavannaDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density)
-plot(I(plot_agg_traits$GeneralistDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density)
-plot(I(plot_agg_traits$ForestDens / plot_agg_traits$Density)  ~ plot_agg_traits$Density)

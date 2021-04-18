@@ -1,7 +1,29 @@
-## To do
+# Process raw data and produce analysis-ready data
+# Sam Flake, sflake@gmail.com
+#
+# This script processes raw data on species traits and stand inventory and outputs 
+# species-level mean trait data and cleaned stand inventory data. The inventory data includes
+# some kludged together data from other data sources, especially light codes collected from other
+# projects at the same study area. It also creates a phylogeny for the study species. 
+#
+# inputs: raw data on individual traits (./raw data/leaf.csv, wood.csv, field.csv)
+#         species list and some ancillary information (./raw data/lista_spp_plantas_families_sf_2020_04_08.csv)
+#         species classifications created by classify_species_splink.R (./raw data/species_link_classification.csv)
+#         stand inventory data (./raw data/30_parcelas_arvores_2015_complet_out_2015_sf_edits.csv)
+#         ancillary information including light codes (./raw data/CharLight_final_102218.csv and FrostDamageAll.csv)
+#         maximum heights of species gleaned from the literature (./raw data/species_max_heights.csv)
+#
+# outputs: species info with classifications (./raw data/sp_info_with_splink.csv)
+#          clean individual trait data (.\\clean data\\clean_data.csv)
+#          clean species trait data  (./clean data/clean_species.csv)
+#          clean species trait data with sample sizes (./clean data/clean_species_with_sample_size.csv)
+#          clean plot inventory data (./clean data/plot_data)
+#          species phylogeny (./clean data/phylogeny_v)
 
-#load libraries
+
+# load libraries
 library("plyr")
+# TODO update to dplyr
 library("effects")
 library("lme4")
 library("phytools")
@@ -9,6 +31,7 @@ library("ape")
 source("./S.PhyloMaker-master/R_codes for S.PhyloMaker") #phylogeny tools
 library("devtools")
 
+# import data
 leaf <- read.csv(".\\raw data\\leaf_traits.csv", stringsAsFactors = FALSE)
 wood <- read.csv(".\\raw data\\twig_traits.csv", stringsAsFactors = FALSE)
 field <- read.csv(".\\raw data\\field_data.csv", stringsAsFactors = FALSE)
@@ -22,18 +45,18 @@ max_heights <- read.csv("./raw data/species_max_heights.csv")
 #------------------------------------------------------------------------------
 # Clean up trait data
 #------------------------------------------------------------------------------
+# just pull in the pertinent data from each separate datasheet
+
 leaf_reduced <- leaf[!(leaf$Individual %in% c("Omit", "omit")), c("Individual", "Leaflet.or.leaf.size..mm2.", "Total.leaf.size..mm2.",
-                                                                  "Leaf.thickness.1..mm.", "Leaf.thickness.2..mm.", "Leaf.thickness.3..mm.", "SLA..cm2.g.1.")]
+                                                                  "Leaf.thickness.1..mm.", "Leaf.thickness.2..mm.", "Leaf.thickness.3..mm.", "SLA..cm2.g.1.", "Method")]
 leaf_reduced$Leaf.thickness.1..mm. <- as.numeric(leaf_reduced$Leaf.thickness.1..mm.)
 leaf_reduced$Leaf.thickness.2..mm. <- as.numeric(leaf_reduced$Leaf.thickness.2..mm.)
 leaf_reduced$Leaf.thickness.3..mm. <- as.numeric(leaf_reduced$Leaf.thickness.3..mm.)
-# leaf_reduced[leaf_reduced$SLA..cm2.g.1. == "#VALUE", "SLA..cm2.g.1."] <- NA
-# leaf_reduced[leaf_reduced$SLA..cm2.g.1. == 0, "SLA..cm2.g.1."] <- NA
 leaf_reduced$SLA..cm2.g.1. <- as.numeric(leaf_reduced$SLA..cm2.g.1.)
 
 wood_reduced <- wood[!(wood$Individual %in% c("Omit", "omit")), c("Individual", "Outer.diameter", "Twig.bark.thickness", "Relative.bark.thickness", "Density..g.mL.")]
 
-field_reduced <- field[!(field$Individual %in% c("Omit", "omit")), c("Individual", "X", "Code", "D30", "DBH", "Ht", "Lower.leaf", "Bark1", "Bark2", "Bark3", "Light")]
+field_reduced <- field[!(field$Individual %in% c("Omit", "omit")), c("Individual", "X", "Code", "D30", "DBH", "Ht", "Lower.leaf", "Bark1", "Bark2", "Bark3", "Light", "Date")]
 names(field_reduced)[2] <- "Bonus"
 
 #get max DBH and max D30
@@ -52,16 +75,15 @@ names(splink_class)[2] <- "New.name"
 sp_info <- join(sp_info, splink_class[, c(2, 6, 7, 8)], by = c("New.name"))
 write.csv(sp_info, "./raw data/sp_info_with_splink.csv")
 
-#compare splink and abreu classifications
-
-
-#is there a more elegant way to do this than joinjoinjoinjoin?
+# merge trait data
+# from past sam: is there a more elegant way to do this than joinjoinjoinjoin?
+# present sam: yes, it could use pipes
 clean_data <- join(join(join(join(field_reduced, leaf_reduced, by = c("Individual"), type = "full"),
                    wood_reduced, by = c("Individual"), type = "full"),
                    sp_info, by = c("Code"), type = "left"), 
                    max_heights[, c(2,3)], by = c("Code"), type = "left")
   
-#### Adding/calculating some variables
+# Adding/calculating some variables
 clean_data$Mean.Leaf.thickness <- NA
 clean_data$Mean.Bark.thickness <- NA
 clean_data$Crown.ratio <- NA
@@ -69,7 +91,7 @@ clean_data$Taper <- NA
 clean_data$Inner.diam <- NA
 clean_data$Stem.rel.bark.thick <- NA
 
-for(i in 1:nrow(clean_data)){ #why is this all in a for loop?
+for(i in 1:nrow(clean_data)){ #why is this all in a for loop? It seems like easily vectorized stuff
   clean_data$Mean.Leaf.thickness[i] <- mean(unlist(clean_data[i, c("Leaf.thickness.1..mm.", "Leaf.thickness.2..mm.", "Leaf.thickness.3..mm.")]), na.rm=TRUE)
   clean_data$Mean.Bark.thickness[i] <- mean(unlist(clean_data[i, c("Bark1", "Bark2", "Bark3")]), na.rm=TRUE)
   clean_data$Crown.ratio[i] <- (clean_data$Ht[i] - clean_data$Lower.leaf[i]) / clean_data$Ht[i]
@@ -80,19 +102,14 @@ for(i in 1:nrow(clean_data)){ #why is this all in a for loop?
 
 clean_data$Ht <- clean_data$Ht/100
 
-# setdiff(sp_info$Code, clean_data$Code)
-
 #Write data
 write.csv(clean_data, ".\\clean data\\clean_data.csv")
-
-
 
 #------------------------------------------------------------------------------
 # Clean up plot data
 #------------------------------------------------------------------------------
 
 plot_data <- plot_data[, !(colnames(plot_data) %in% c("X", "X.1", "X.2", "X.3", "X.4"))]
-
 
 #fix some special characters in diameter data
 plot_data$D30 <- gsub("=", "", plot_data$D30)
@@ -102,9 +119,10 @@ plot_data$DBH <- gsub("=", "", plot_data$DBH)
 plot_data$DBH <- gsub("\\(", "", plot_data$DBH)
 plot_data$DBH <- gsub("\\)", "", plot_data$DBH)
 
-plot_data_no_equals <- plot_data[plot_data$Species != "=", ]
 
 #clean up weird data entry
+plot_data_no_equals <- plot_data[plot_data$Species != "=", ]
+
 for(i in 1:nrow(plot_data_no_equals)){
   tree_number <- plot_data_no_equals[i, "Number"]
   
@@ -115,10 +133,8 @@ for(i in 1:nrow(plot_data_no_equals)){
       which_d30 <- sapply(plot_data[plot_data$Number == tree_number, "D30"], FUN = function(x){x!=""})
       
       plot_data_no_equals[i, "D30"] <- paste(plot_data[plot_data$Number == tree_number, "D30"][which_d30], collapse = "+")
-      
-      
+            
     }
-    
   }
 }
 
@@ -131,10 +147,9 @@ plot_data_no_equals[plot_data_no_equals$Species == "Chromolaena maximilianii", "
 plot_data_no_equals[plot_data_no_equals$Species == "Ocotea puberula", "Code"] <- "OCPU2"
 plot_data_no_equals[plot_data_no_equals$Species == "Ocotea velutina", "Code"] <- "OCVE2"
 plot_data_no_equals[plot_data_no_equals$Species == "Diospyros hispida", "Code"] <- "DIBU"
-plot_data_no_equals[plot_data_no_equals$Species == "Lippia sidoides", "Code"] <- "LISA" #use same values for LISA and LISI
+plot_data_no_equals[plot_data_no_equals$Species == "Lippia sidoides", "Code"] <- "LISA"
 
-
-#fix some mis-entered data
+#fix some data entry errors
 plot_data_no_equals[plot_data_no_equals$Number == 4237, "Ht"] <- 5.5
 plot_data_no_equals[plot_data_no_equals$Number == 4393, "Ht"] <- 1.9
 plot_data_no_equals[plot_data_no_equals$Number == 4319, "Ht"] <- 1.8
@@ -178,9 +193,9 @@ plot_data_no_equals[plot_data_no_equals$Number == 2071, "D30"] <- NA
 plot_data_no_equals[plot_data_no_equals$Number == 5309, "D30"] <- 2.3
 plot_data_no_equals[plot_data_no_equals$Number == 3496, "D30"] <- 1.6
 
-
 #calculate max diameters and cross-sectional areas for all trees; replace NaNs and Infs with NA
 #don't worry about the errors
+
 plot_data_no_equals$Max_DBH <- as.numeric(sapply(plot_data_no_equals$DBH, FUN = function(x){max(as.numeric(unlist(strsplit(x, split = "+", 
                                                                                                                            fixed = TRUE, perl = FALSE, useBytes = FALSE))))}))
 plot_data_no_equals$Max_DBH <- ifelse(!is.finite(plot_data_no_equals$Max_DBH), NA, plot_data_no_equals$Max_DBH)
@@ -197,8 +212,10 @@ plot_data_no_equals$CSA_30 <- as.numeric(sapply(plot_data_no_equals$D30, FUN = f
                                                                                                                              fixed = TRUE, perl = FALSE, useBytes = FALSE))))/2)^2)*3.14159)}))
 plot_data_no_equals$CSA_30 <- ifelse(!is.finite(plot_data_no_equals$CSA_30), NA, plot_data_no_equals$CSA_30)
 
+# if trees are smaller than 5 cm, give them an expansion factor of 4 to account for subplot sampling
 plot_data_no_equals$Density_expand <- ifelse(!is.na(plot_data_no_equals$Max_D30), 
-                                             ifelse(plot_data_no_equals$Max_D30 > 5, 1, 4), ifelse(plot_data_no_equals$Max_DBH > 5, 1, 4)) 
+                                             ifelse(plot_data_no_equals$Max_D30 > 5, 1, 4), 
+											 ifelse(plot_data_no_equals$Max_DBH > 5, 1, 4)) 
                                              
 plot_data_no_equals$CSA_30_expand <- plot_data_no_equals$CSA_30 * plot_data_no_equals$Density_expand
 
@@ -218,13 +235,15 @@ plot_data_no_equals <- join(plot_data_no_equals, sp_info[, c(4,5,6,7,8,15)], by 
 bark_table <- clean_data[, c("Code", "max_d30", "Mean.Bark.thickness")]
 
 ## Get relative bark thickness for twigs
-
 bark_table_2 <- clean_data[, c("Code", "Outer.diameter", "Twig.bark.thickness")]
 bark_table_2$Outer.diameter <- bark_table_2$Outer.diameter / 10
 names(bark_table_2) <- names(bark_table)[1:3]
-bark_table <- rbind(bark_table, bark_table_2) #combine all bark measurements into one data frame
+
+#combine all bark measurements into one data frame
+bark_table <- rbind(bark_table, bark_table_2)
 bark_table$Code <- as.factor(bark_table$Code)
 
+# fit models of bark ~ diameter and for mean bark thickness per species
 bark_model_global  <- lm(Mean.Bark.thickness ~  Code*log(max_d30), data = bark_table)
 bark_model_fg <- lm(Mean.Bark.thickness ~  Code, data = bark_table)
 saveRDS(bark_model_global, "./clean data/bark_model.RDS")
@@ -232,7 +251,6 @@ saveRDS(bark_model_fg, "./clean data/bark_model_fg.RDS")
 #-------------------------------------------------------------------------
 # Spruce up frost and light data
 #-------------------------------------------------------------------------
-
 frost_temp <- frost[, c("placa", "light")]
 names(frost_temp)[1] <- "N."
 frost_temp$"N." <- as.character(frost_temp$"N.")
@@ -253,16 +271,12 @@ charlight_temp <- charlight[charlight$"N." != "" & !(is.na(charlight$"N.")), ]
 names(charlight_temp)[5] <- "placa"
 charlight_temp <- charlight_temp[, c("placa", "Light.code")]
 
-# frost_new <- join(frost, charlight_temp, by = c("placa"), type = "left")
-
-# write.csv(frost_new, paste0("./clean data/FrostDamageMerged", Sys.Date(), ".csv"))
-
-
 charlight$Code <- as.character(sapply(as.character(charlight$Especie), FUN = function(x){toupper(paste(substr(unlist(strsplit(x , split = " ")), 1, 2), collapse = ""))}))
 
 charlight[charlight$Code == "DIHI", "Code"] <- "DIBU"
 names(charlight)[5] <- "Number"
 
+#add light codes and char heights from char and frost data to census data
 plot_data_no_equals <- join(plot_data_no_equals, charlight[, c("Number", "Light.code", "Char.height")], by = c("Number"), type = "left" )
 
 write.csv(plot_data_no_equals, paste0("./Clean data/plot_data", Sys.Date(), ".csv"))
@@ -270,7 +284,6 @@ write.csv(plot_data_no_equals, paste0("./Clean data/plot_data", Sys.Date(), ".cs
 #------------------------------------------------------------------------
 # Create species-level data
 #------------------------------------------------------------------------
-
 #initialize species-level dataframe
 clean_species <- data.frame(Code = unique(clean_data$Code),
                             N = numeric(length(unique(clean_data$Code))),
@@ -288,18 +301,19 @@ clean_species <- data.frame(Code = unique(clean_data$Code),
                             SLA = numeric(length(unique(clean_data$Code))),
                             Bark_at_5cm = numeric(length(unique(clean_data$Code))),
                             Bark_at_8mm = numeric(length(unique(clean_data$Code))),
-                            #Leaf_N = numeric(length(unique(clean_data$Code))),
                             Wood_density = numeric(length(unique(clean_data$Code))),
                             FG = character(length(unique(clean_data$Code))),
                             Habit = character(length(unique(clean_data$Code))),
                             stringsAsFactors = FALSE
 )
 
+# fill the dataframe for each trait; some stuff is just transferred directly and others
+# require some calculation, e.g. bark data
 for(i in 1:length(unique(clean_data$Code))){
   code_select <- unique(clean_data$Code)[i]
   data_select <- clean_data[clean_data$Code == code_select, ]
   
-  clean_species$N[i] <- nrow(data_select)#length(which(complete.cases(data_select)))
+  clean_species$N[i] <- nrow(data_select)
   clean_species$N_wood[i] <- nrow(data_select[!is.na(data_select$Density..g.mL.), ])
   clean_species$N_leaf[i] <- nrow(data_select[!is.na(data_select$SLA..cm2.g.1.), ])
   clean_species$N_bark[i] <- nrow(data_select[!is.na(data_select$Mean.Bark.thickness), ])
@@ -335,7 +349,7 @@ for(i in 1:length(unique(clean_data$Code))){
   
   
   #Height at 5cm
-  # use data from both plots and field measurements
+  # use data from both plots and field measurements, whichever is larger
   ht_subset <- subset(plot_data_no_equals, Code == code_select)[, c("Ht", "D30_eff")]
   ht_subset <- rbind(ht_subset, data_select[, c("Ht", "D30_eff")])
   ht_subset <- ht_subset[ht_subset$D30_eff > 0 & !(is.na(ht_subset$D30_eff)) & !(is.na(ht_subset$Ht)), ]
@@ -355,7 +369,7 @@ for(i in 1:length(unique(clean_data$Code))){
   } else{clean_species$Crown_ratio[i] <- NA}
   
   
-  #FG
+  #FG from specieslink data
   clean_species$FG[i] <- as.character(data_select$classification66[1])
   
   #Light at 5cm
@@ -365,6 +379,7 @@ for(i in 1:length(unique(clean_data$Code))){
   light_subset <- rbind(light_subset, light_select)
   light_subset <- light_subset[light_subset$D30_eff > 0 & !(is.na(light_subset$D30_eff)) & !(is.na(light_subset$Light.code)), ]
   
+  #only return a number if there's at least 5 individuals per species
   if(nrow(light_subset) >= 5 &
      min(light_subset$D30_eff, na.rm = TRUE) < 6 &
      max(light_subset$D30_eff, na.rm = TRUE) >4){
@@ -382,9 +397,10 @@ for(i in 1:length(unique(clean_data$Code))){
 
 clean_species_sample_size <- clean_species
 clean_species_sample_size <- join(clean_species_sample_size, sp_info, by = c("Code"))
+# includes data on sample size for paper
 write.csv(clean_species_sample_size, "./clean data/clean_species_with_sample_size.csv")
 
-
+#get rid of some extraneous data
 clean_species <- clean_species[, -c(3:6)]
 
 #sample size per trait? 
@@ -394,7 +410,6 @@ N_ind <- apply(clean_data, c(2), FUN = function(x){sum(!is.na(x))})
 
 #replace zeroes with NAs
 clean_species[, -c(1,2,14,15)] <- apply(clean_species[, -c(1,2,14,15)], c(1,2), FUN = function(x){ifelse(x == 0, NA, x)})
-
 clean_species[, -c(1,2,14,15)] <- apply(clean_species[, -c(1,2,14,15)], c(1,2), FUN = function(x){ifelse(x<0, NA, x)})
 
 write.csv(clean_species, paste0("./clean data/clean_species", Sys.Date(), ".csv"))
@@ -405,6 +420,7 @@ write.csv(clean_species, paste0("./clean data/clean_species", Sys.Date(), ".csv"
 
 #------------------------------------------------------------------------------
 # Tree using V.Phylomaker
+# code borrowed from jinyizju/V.PhyloMaker
 
 # devtools::install_github("jinyizju/V.PhyloMaker")
 library("V.PhyloMaker")
@@ -440,6 +456,5 @@ nodes.info.1[nodes.info.1$genus == "Gochnatia", ]$genus <- "Moquiniastrum"
 rel <- bind.relative(sp.list=spList, tree=GBOTB.extended, nodes=nodes.info.1)
 tree_rel <- phylo.maker(sp.list=rel$species.list, tree=rel$phylo,
                       nodes=rel$nodes.info, scenarios="S3")
-
 
 write.tree(tree_rel$scenario.3, "./clean data/phylogeny_v")
