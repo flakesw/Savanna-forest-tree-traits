@@ -41,3 +41,4 @@ vignettes/*.pdf
 
 #other files to ignore
 /extras/
+*.Rproj
