@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/154214268.svg)](https://zenodo.org/badge/latestdoi/154214268)
+
 # Data and code for Flake et al. Accepted.Savannas are not old fields: functional trajectories of forest expansion in a fire-suppressed Brazilian savanna are driven by habitat generalists. Functional Ecology.
 
 Analysis and scripts by Sam Flake, contact sflake@gmail.com
