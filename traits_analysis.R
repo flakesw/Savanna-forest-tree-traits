@@ -208,15 +208,10 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
                         expression(paste("Wood density (g cm"^"-3",")")),
                         "         Light code\nat 5 cm dia. (unitless)")
 
-tiff(filename="./plots/traits_by_FG.tiff", 
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in", 
+cairo_pdf(file ="./plots/traits_by_FG.pdf", 
      width = 7, 
-     height=4, 
-     pointsize=9, 
-     res=600)
+     height=4,
+     pointsize = 9)
 
 par(mfrow = c(2, 5),
     mar = c(2,6,2,0.5),
@@ -302,15 +297,10 @@ dev.off()
 # Same figure as a boxplot
 #------------------------------------------------------------------------------
 
-tiff(filename="./plots/Figure_2_traits_by_FG_boxplot.tiff", 
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in", 
-     width = 7, 
-     height=4, 
-     pointsize=9, 
-     res=600)
+cairo_pdf(file ="./plots/FE-2020-00824_Figure_2.pdf", 
+          width = 7, 
+          height=4,
+          pointsize = 9)
 
 par(mfrow = c(2, 5),
     mar = c(2,5.2,2,0.5),
@@ -416,15 +406,11 @@ biplot(pca_results, choices = c(1,2))
 
 set.seed(45750766)
 
-tiff(filename="./plots/Figure_3_traits_PCA_axes_1_2.tiff", 
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in", 
-     width = 7, 
-     height=7, 
-     pointsize=9, 
-     res=600)
+cairo_pdf(file ="./plots/FE-2020-00824_Figure_3.pdf", 
+          width = 7, 
+          height=7,
+          pointsize = 9)
+
 color_groups <- data.frame(group = as.character(c("F", "G", "S")),
                            col = as.character(c("black", "#1b9e77", "#E69F00")))
 color_points <- as.character(color_groups[match(pca_groups, color_groups$group), "col"])
@@ -689,15 +675,10 @@ traits_names_clean <- c(expression(paste("Leaf size (cm"^"2", ")")),
 #Generate Figure 4
 #------------------------------------------------------------------------------
 
-tiff(filename="./plots/Figure_4_community_weighted_traits.tiff", 
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in", 
-     width = 5, 
-     height=8, 
-     pointsize=12, 
-     res=600)
+cairo_pdf(file ="./plots/FE-2020-00824_Figure_4.pdf", 
+          width = 5, 
+          height=8,
+          pointsize = 12)
 
 par(mfrow = c(5,2))
 par(oma = c(1,1,3,0), mar = c(4,5,1,1), family = "sans")
@@ -984,15 +965,10 @@ dev.off()
 #----------------------------------------------------------------------------------
 # Figure 1: Functional type ~ BA
 #----------------------------------------------------------------------------------
-tiff(filename="./plots/Figure_1_change_in_FTs.tiff", 
-     type = "cairo",
-     antialias = "gray",
-     compression = "lzw",
-     units="in", 
-     width = 4, 
-     height=4, 
-     pointsize=12, 
-     res=600)
+cairo_pdf(file ="./plots/FE-2020-00824_Figure_1.pdf", 
+          width = 4, 
+          height=4,
+          pointsize = 12)
 
 par(mfrow = c(2,1))
 par(oma = c(2,2.4,0,1))
